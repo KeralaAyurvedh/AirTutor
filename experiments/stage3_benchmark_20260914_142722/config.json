@@ -1,0 +1,25 @@
+{
+  "run_id": "stage3_benchmark_20260914_142722",
+  "timestamp": "20260914_142722",
+  "git_commit": "c4ec9aa97ca360af90c86cea6ff47f58dd5f722a",
+  "n_train_learners": 300,
+  "train_seed_range": [
+    0,
+    300
+  ],
+  "n_eval_learners": 100,
+  "eval_seed_range": [
+    10000,
+    10100
+  ],
+  "rl_seeds": [
+    42,
+    101,
+    2024,
+    777,
+    999
+  ],
+  "reward_version": "v1 (r_t = delta M_hat)",
+  "state_encoder": "default_v1 (320 states, 1600 Q-values)",
+  "max_steps_per_episode": 30
+}

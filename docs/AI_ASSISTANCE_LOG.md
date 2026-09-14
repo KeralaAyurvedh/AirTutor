@@ -68,3 +68,30 @@ This log documents AI-assisted development across each stage of the AirTutor res
     - Action Entropy: Random (2.225 bits, near max), Fixed (1.000 bits), Rule (1.384 bits).
 - **Deviations / Notes:**
   - In `src/simulator/dynamics.py`, introduced `FORGETTING_SCALE = 0.08` to convert $\beta \in [0.01, 0.15]$ to per-step decay ($0.001 - 0.012$), matching observable estimator $\delta = 0.01$ and preventing unnatural curriculum-wide knowledge erasure over multi-concept episodes.
+
+---
+
+## Stage 3: Tabular Q-Learning Agent & Held-Out Benchmark
+- **Date:** 2026-09-14
+- **Prompt:** Prompt 4 of 7
+- **AI Contributions:**
+  - Implemented Reward v1 in `src/environment/rewards.py`: $r_t = \hat{M}_{c, t+1} - \hat{M}_{c, t}$ based strictly on observable estimated mastery.
+  - Implemented `TabularQAgent` in `src/rl/q_learning.py` conditioning strictly on the 320 discrete observable states from Stage 2. Hyperparameters declared near top: `learning_rate = 0.15`, `discount_factor = 0.90`, `epsilon = 1.0 -> 0.05` (`decay = 0.992`). Includes serialization and persistence.
+  - Implemented multi-seed training pipeline in `src/rl/train.py` training over 5 independent seeds on training population of 300 simulated learners (seed range $[0, 300)$).
+  - Implemented publication plotting utilities in `src/evaluation/plotting.py` generating:
+    - Training reward curve across RL seeds with $\pm 1 \sigma$ error bands.
+    - Held-out learning gain by teacher with standard deviation error bars.
+  - Implemented held-out statistical benchmark in `src/evaluation/compare_teachers.py` evaluating Random, Fixed, Rule, and RL on 100 held-out unseen learners (seed range $[10000, 10100)$, strictly disjoint from training).
+  - Implemented automated experiment logging saving config snapshot, seeds, git commit hash, raw episode results, summary statistics with 95% CI, and plots under `experiments/<run_id>/`.
+  - Added 6 unit tests in `tests/test_rewards.py` and `tests/test_q_learning.py` (total 38 tests passing).
+- **Verification & Review:**
+  - `python -m pytest` passed all 38 tests in 1.71s.
+  - Executed `python src/evaluation/compare_teachers.py` end-to-end.
+  - Verified held-out evaluation on disjoint population:
+    - Learning Gain (Observed): **RL (0.131 $\pm$ 0.076 [$\pm$0.007])** > Rule (0.028 $\pm$ 0.071 [$\pm$0.014]) > Fixed (0.018 $\pm$ 0.065) > Random (0.012 $\pm$ 0.061).
+    - True Learning Gain: **RL (0.299 $\pm$ 0.191 [$\pm$0.017])** > Rule (0.234 $\pm$ 0.157) > Fixed (0.215 $\pm$ 0.210) > Random (0.166 $\pm$ 0.151).
+    - Intervention Efficiency: **RL (0.0044)** > Rule (0.0009) > Fixed (0.0006) > Random (0.0004).
+    - Hint Usage Rate: RL (0.005) avoided over-hinting under Reward v1.
+    - Policy Diversity: RL maintained healthy action entropy ($1.374$ bits) without collapsing into a single action.
+- **Deviations / Notes:**
+  - None. All evaluation protocol, seed disjointness, and standing rules were strictly enforced.
