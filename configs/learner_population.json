@@ -1,0 +1,41 @@
+{
+  "description": "Parametric simulated learner population parameter ranges (Roadmap Sec. 9).",
+  "parameter_ranges": {
+    "alpha": {
+      "name": "learning_rate",
+      "min": 0.05,
+      "max": 0.35,
+      "description": "Mastery increase per well-matched intervention."
+    },
+    "beta": {
+      "name": "forgetting_rate",
+      "min": 0.01,
+      "max": 0.15,
+      "description": "Per-step mastery decay when a concept is unpracticed."
+    },
+    "gamma": {
+      "name": "difficulty_sensitivity",
+      "min": 0.5,
+      "max": 2.0,
+      "description": "Sensitivity to mismatch between question difficulty and current mastery."
+    },
+    "h": {
+      "name": "hint_dependence",
+      "min": 0.0,
+      "max": 1.0,
+      "description": "How much hints boost immediate correctness vs. durable mastery gain."
+    },
+    "tau": {
+      "name": "transfer_ability",
+      "min": 0.2,
+      "max": 1.0,
+      "description": "Fraction of prerequisite mastery gain that propagates to dependent concepts."
+    },
+    "sigma": {
+      "name": "response_noise",
+      "min": 0.02,
+      "max": 0.10,
+      "description": "Stochastic noise added to correctness probability."
+    }
+  }
+}

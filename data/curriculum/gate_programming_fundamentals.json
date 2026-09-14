@@ -1,0 +1,226 @@
+{
+  "module_id": "gate_programming_fundamentals",
+  "title": "GATE Programming & Data Structures Fundamentals",
+  "concepts": [
+    {
+      "concept_id": "variables",
+      "name": "Variables & Data Types",
+      "prerequisites": [],
+      "difficulty": 1,
+      "questions": [
+        {
+          "question_id": "var_01",
+          "prompt": "What is the data type of the result of expression 7 / 2 in Python 3?",
+          "answer": "float",
+          "type": "mcq"
+        },
+        {
+          "question_id": "var_02",
+          "prompt": "If x = 10 and y = '10', what is the result of x == int(y)?",
+          "answer": "True",
+          "type": "short"
+        },
+        {
+          "question_id": "var_03",
+          "prompt": "Which keyword is used to define a constant-like variable convention in Python?",
+          "answer": "UPPERCASE",
+          "type": "mcq"
+        },
+        {
+          "question_id": "var_04",
+          "prompt": "What is the output of type(3 + 4j)?",
+          "answer": "complex",
+          "type": "mcq"
+        },
+        {
+          "question_id": "var_05",
+          "prompt": "Write an assignment statement that sets a variable 'count' to integer 0.",
+          "answer": "count = 0",
+          "type": "code"
+        },
+        {
+          "question_id": "var_06",
+          "prompt": "In Python, are strings mutable or immutable?",
+          "answer": "immutable",
+          "type": "short"
+        }
+      ]
+    },
+    {
+      "concept_id": "conditionals",
+      "name": "Conditionals & Branching",
+      "prerequisites": ["variables"],
+      "difficulty": 2,
+      "questions": [
+        {
+          "question_id": "cond_01",
+          "prompt": "What boolean value does bool('') (empty string) evaluate to?",
+          "answer": "False",
+          "type": "short"
+        },
+        {
+          "question_id": "cond_02",
+          "prompt": "In an if-elif-else block, how many elif blocks are allowed?",
+          "answer": "arbitrary",
+          "type": "mcq"
+        },
+        {
+          "question_id": "cond_03",
+          "prompt": "What is the value of: True and not False?",
+          "answer": "True",
+          "type": "short"
+        },
+        {
+          "question_id": "cond_04",
+          "prompt": "Which logical operator has higher precedence: 'and' or 'or'?",
+          "answer": "and",
+          "type": "mcq"
+        },
+        {
+          "question_id": "cond_05",
+          "prompt": "Write a conditional expression that assigns 'even' if n % 2 == 0 else 'odd'.",
+          "answer": "'even' if n % 2 == 0 else 'odd'",
+          "type": "code"
+        },
+        {
+          "question_id": "cond_06",
+          "prompt": "What does a single '=' represent in Python versus '=='?",
+          "answer": "assignment vs equality comparison",
+          "type": "short"
+        }
+      ]
+    },
+    {
+      "concept_id": "loops",
+      "name": "Loops & Iteration",
+      "prerequisites": ["conditionals"],
+      "difficulty": 3,
+      "questions": [
+        {
+          "question_id": "loop_01",
+          "prompt": "What is the total number of iterations executed by range(2, 10, 2)?",
+          "answer": "4",
+          "type": "short"
+        },
+        {
+          "question_id": "loop_02",
+          "prompt": "Which statement terminates the current loop immediately and transfers control to the statement following the loop?",
+          "answer": "break",
+          "type": "mcq"
+        },
+        {
+          "question_id": "loop_03",
+          "prompt": "Which statement skips the rest of the current iteration and advances to the next?",
+          "answer": "continue",
+          "type": "mcq"
+        },
+        {
+          "question_id": "loop_04",
+          "prompt": "Does a while loop's 'else' clause execute if the loop is terminated by a break?",
+          "answer": "No",
+          "type": "short"
+        },
+        {
+          "question_id": "loop_05",
+          "prompt": "Write a loop header that iterates variable i from 0 up to (but not including) 5.",
+          "answer": "for i in range(5):",
+          "type": "code"
+        },
+        {
+          "question_id": "loop_06",
+          "prompt": "What is the time complexity of summing N numbers using a single while loop?",
+          "answer": "O(N)",
+          "type": "mcq"
+        }
+      ]
+    },
+    {
+      "concept_id": "functions",
+      "name": "Functions & Scope",
+      "prerequisites": ["variables", "conditionals"],
+      "difficulty": 3,
+      "questions": [
+        {
+          "question_id": "func_01",
+          "prompt": "What value is returned by a Python function that executes without an explicit return statement?",
+          "answer": "None",
+          "type": "short"
+        },
+        {
+          "question_id": "func_02",
+          "prompt": "Which keyword is used to modify a variable in the global scope from within a function?",
+          "answer": "global",
+          "type": "mcq"
+        },
+        {
+          "question_id": "func_03",
+          "prompt": "What syntax is used to define variable positional arguments in Python?",
+          "answer": "*args",
+          "type": "short"
+        },
+        {
+          "question_id": "func_04",
+          "prompt": "In Python function definitions, can a default argument appear before a non-default argument?",
+          "answer": "No",
+          "type": "short"
+        },
+        {
+          "question_id": "func_05",
+          "prompt": "Write a lambda function that returns the square of parameter x.",
+          "answer": "lambda x: x ** 2",
+          "type": "code"
+        },
+        {
+          "question_id": "func_06",
+          "prompt": "What is the scope resolution order used by Python (often called LEGB rule)?",
+          "answer": "Local, Enclosing, Global, Built-in",
+          "type": "mcq"
+        }
+      ]
+    },
+    {
+      "concept_id": "lists",
+      "name": "Arrays & Lists",
+      "prerequisites": ["loops", "functions"],
+      "difficulty": 4,
+      "questions": [
+        {
+          "question_id": "list_01",
+          "prompt": "What is the time complexity of appending an element to the end of a Python list (amortized)?",
+          "answer": "O(1)",
+          "type": "mcq"
+        },
+        {
+          "question_id": "list_02",
+          "prompt": "What is the output of [1, 2, 3][::-1]?",
+          "answer": "[3, 2, 1]",
+          "type": "short"
+        },
+        {
+          "question_id": "list_03",
+          "prompt": "What is the worst-case time complexity of inserting an element at index 0 in a list of size N?",
+          "answer": "O(N)",
+          "type": "mcq"
+        },
+        {
+          "question_id": "list_04",
+          "prompt": "Write a list comprehension that produces squares of numbers from 0 to 4.",
+          "answer": "[x**2 for x in range(5)]",
+          "type": "code"
+        },
+        {
+          "question_id": "list_05",
+          "prompt": "What is the difference between list.sort() and sorted(list)?",
+          "answer": "sort() is in-place; sorted() returns a new list",
+          "type": "short"
+        },
+        {
+          "question_id": "list_06",
+          "prompt": "What error is raised when accessing an index beyond len(lst) - 1?",
+          "answer": "IndexError",
+          "type": "mcq"
+        }
+      ]
+    }
+  ]
+}
