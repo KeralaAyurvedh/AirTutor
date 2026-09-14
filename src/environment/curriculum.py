@@ -89,6 +89,10 @@ class CurriculumRepository:
     def get_all_concepts(self) -> list[Concept]:
         return list(self.concepts.values())
 
+    def list_modules(self) -> list[str]:
+        """Return list of all loaded module IDs."""
+        return list(self.modules.keys())
+
 
 def load_module_from_file(file_path: Path | str) -> CurriculumModule:
     """Parse and validate a single curriculum JSON file."""

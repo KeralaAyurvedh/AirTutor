@@ -2,7 +2,32 @@
 
 Authoritative Spec Cross-Reference: [`docs/research_roadmap_v2.md`](research_roadmap_v2.md)
 
+This document provides a concise prose walkthrough of the experimental design, evaluation methodology, and empirical findings of AirTutor. Per project standards, all theoretical formalisms, mathematical derivations, and architecture choices cross-reference specific sections of `docs/research_roadmap_v2.md` rather than re-explaining them.
+
 ---
+
+## Roadmap Section Cross-Reference Matrix
+
+| Topic Area | Roadmap Section | Implementation File | Primary Invariant / Research Function |
+|---|---|---|---|
+| **Mathematical POMDP Formulation** | [Sec. 7](research_roadmap_v2.md#7-mathematical-rl-formulation) | `src/rl/q_learning.py` | State $S$, Action $A$, Transition $T$, Reward $R$, Discount $\gamma=0.90$. |
+| **Observable Learner Model** | [Sec. 8](research_roadmap_v2.md#8-learner-model) | `src/learner_model/mastery.py` | Empirical $\hat{M}(c, t) \in [0, 1]$; updates via $\eta=0.20$, $\delta=0.01$. |
+| **Parametric Learner Population** | [Sec. 9](research_roadmap_v2.md#9-parametric-learner-population) | `src/simulator/population.py` | Hidden $\theta = [\alpha, \beta, \gamma_c, h, \tau, \sigma]$; truncated normals. |
+| **Hidden vs. Observable Split** | [Sec. 10](research_roadmap_v2.md#10-hidden-vs-observable-learner-state) | `src/environment/state_encoder.py` | Policy conditions exclusively on $O_t$; $\theta$ is strictly inaccessible. |
+| **Simulator Dynamics & Sanity** | [Sec. 11–12](research_roadmap_v2.md#11-simulator-dynamics) | `src/simulator/dynamics.py` | Continuous $M(c, t)$; 5 automated mathematical sanity checks. |
+| **Observable State Representation** | [Sec. 13](research_roadmap_v2.md#13-observable-state-representation) | `src/environment/state_encoder.py` | 5 toggleable features: $5 \times 2 \times 4 \times 4 \times 2 = 320$ discrete states. |
+| **Pedagogical Action Space** | [Sec. 14](research_roadmap_v2.md#14-pedagogical-action-space) | `src/environment/actions.py` | 5 discrete interventions: `EXPLAIN`, `EXAMPLE`, `HINT`, `PRACTICE`, `REVIEW`. |
+| **Reward Formulations (v1, v2, v3)** | [Sec. 15](research_roadmap_v2.md#15-reward-design) | `src/environment/rewards.py` | v1 (mastery gain), v2 (+retention, -cost), v3 (+transfer, -penalties). |
+| **Baseline Pedagogical Teachers** | [Sec. 16](research_roadmap_v2.md#16-baseline-teachers) | `src/teachers/` | `RandomTeacher`, `FixedCurriculumTeacher`, `RuleBasedTeacher`. |
+| **Disjoint Training / Evaluation** | [Sec. 17](research_roadmap_v2.md#17-training--evaluation-protocol) | `src/rl/train.py`, `src/evaluation/` | Train seeds $[0, 300)$; Held-out eval seeds $[10000, 10100)$. |
+| **Research Metrics & Statistics** | [Sec. 19–20](research_roadmap_v2.md#19-metrics) | `src/evaluation/metrics.py`, `src/evaluation/stats.py` | 6 core metrics, Welch's $t$-test, Wilcoxon, Cohen's $d$, 95% bootstrap CIs. |
+| **Robustness & Sensitivity Sweep** | [Sec. 21](research_roadmap_v2.md#21-robustness-and-sensitivity-analysis) | `src/evaluation/sensitivity.py` | 12-axis perturbation testing across $\pm 20\%$ parameter shifts. |
+| **Systematic Ablation Studies** | [Sec. 22](research_roadmap_v2.md#22-ablation-studies) | `src/evaluation/ablations.py` | Reward ablations, state feature ablations, population diversity. |
+| **Decoupled LLM Layer** | [Sec. 24–27](research_roadmap_v2.md#24-llm-abstraction-architecture) | `src/llm/` | `LLMProvider` interface; Gemini, OpenAI-compatible, Offline template. |
+| **Extensible Curriculum Schema** | [Sec. 28](research_roadmap_v2.md#28-curriculum-architecture) | `src/environment/curriculum.py` | JSON-driven curriculum; dynamic validation via `pydantic`/schema. |
+| **System Architectural Decoupling** | [Sec. 29](research_roadmap_v2.md#29-research-core-vs-delivery-vs-demo-layer) | `GEMINI.md` | Research Core $\perp$ Delivery Layer $\perp$ Demo Layer (`app/main.py`). |
+| **Terminology Standards** | [Sec. 39](research_roadmap_v2.md#39-terminology-standards) | Entire repository | "simulated learner", "transparent policy inspection", "preliminary evidence". |
+| **Limitations & Future Work** | [Sec. 40](research_roadmap_v2.md#40-future-research-extensions) | `README.md`, Section 4 below | BKT knowledge tracing, personalization, unseen adaptation, real pilot. |
 
 ## 1. System Architecture & Core Research Identity
 

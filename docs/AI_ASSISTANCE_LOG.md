@@ -164,4 +164,32 @@ This log documents AI-assisted development across each stage of the AirTutor res
 - **Deviations / Notes:**
   - Added `templates` field to `Concept` dataclass in `src/environment/curriculum.py` to allow curriculum JSON files to optionally bundle pre-written offline pedagogical templates.
 
+---
+
+## Stage 6: Streamlit Application, Research Documentation, & Final Package
+- **Date:** 2026-09-14
+- **Prompt:** Prompt 7 of 7
+- **AI Contributions:**
+  - Implemented Streamlit presentation layer in `app/main.py`:
+    - **Tab 1 (Interactive Tutoring Session):** Concept selection, formative question presentation, user / simulated answer submission, empirical learner model updates ($\hat{M}$), RL policy action selection, decoupled LLM natural language rendering, and response latency/cache diagnostics.
+    - **Tab 2 (Transparent Policy Inspection):** Complete breakdown of the 5 observable state features ($b_m, c_{\text{last}}, acc_3, s_{\text{err}}, h$), flat state index ($s \in [0, 319]$), horizontal bar chart of $Q(s, a)$ for all 5 actions, policy rationale statement, and an interactive "What-If" state explorer allowing real-time parameter manipulation.
+    - **Tab 3 (Compare Teachers & Benchmarks):** Empirical benchmark comparison table with 95% bootstrap confidence intervals, alongside all 5 publication figures from Stage 3 and Stage 4.
+    - **Tab 4 (Add Curriculum Material):** Freeform syllabus/lecture notes ingestion text-area calling `add_module_from_notes()` and reloading the curriculum repository dynamically.
+  - Enforced strict architectural decoupling: `app/main.py` contains zero Q-table Bellman update logic, zero reward computation functions, and zero simulator dynamics equations—strictly importing and calling into `src/`.
+  - Authored UI and end-to-end integration tests in `tests/test_ui.py`.
+  - Added `list_modules()` method to `CurriculumRepository` in `src/environment/curriculum.py`.
+  - Pinned exact dependency versions in `requirements.txt` (`numpy==2.2.6`, `pandas==2.3.3`, `matplotlib==3.10.7`, `streamlit==1.52.2`, `python-dotenv==1.2.1`, `pytest==9.0.2`, `google-genai==2.23.0`).
+  - Updated `.gitignore` to exclude `.env`, `__pycache__`, and large experiment artifacts/logs (`results_raw.json`, `*.npy`, `*.log`).
+  - Rewrote `README.md` with complete problem statement, ASCII architecture diagram, formal state/action/reward specifications, setup instructions, benchmark results table, explicit "Limitations & Future Work" section (Roadmap Sec. 40), and strict compliance with Roadmap Sec. 39 terminology standards ("simulated learner", "transparent policy inspection", "preliminary simulated evidence").
+  - Updated `docs/methodology.md` with comprehensive Roadmap section cross-reference matrix and prose experimental walkthrough.
+  - Conducted end-to-end browser verification of `app/main.py` using `browser_subagent` at `http://localhost:8501`, testing all 4 tabs, submitting answers, inspecting Q-values, viewing plots, and capturing screenshots.
+- **Verification & Review:**
+  - Ran `python -m pytest` with 68/68 tests passing cleanly in 5.79s.
+  - Verified `app/main.py` imports cleanly in headless environments.
+  - Verified out-of-the-box offline execution with zero API keys configured (`OfflineTemplateAdapter`).
+  - Verified browser interactions: answer simulation dynamically elevated estimated mastery from 0.100 to 0.280, triggered policy action `EXPLAIN`, rendered pedagogical text, mapped state index 104, displayed Q-values bar chart, and rendered all benchmark figures.
+- **Deviations / Notes:**
+  - Cached pre-trained agent loading in `app/main.py` with automatic fallback to on-the-fly training (~0.6s) to ensure instant, error-free startup from a completely clean clone without requiring pre-existing `.npy` files.
+
+
 

@@ -52,3 +52,9 @@ ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 .DS_Store
+
+# Large Experiment Artifacts & Raw Logs
+experiments/**/results_raw.json
+experiments/**/*.npy
+*.log
+
