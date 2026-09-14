@@ -43,3 +43,28 @@ This log documents AI-assisted development across each stage of the AirTutor res
   - Verified architectural barrier: $\theta$ and true latent mastery $M_t$ remain strictly simulator-internal and are never accessed by the learner model.
 - **Deviations / Notes:**
   - Parameter distributions externalized to `configs/learner_population.json` per GEMINI.md requirements.
+
+---
+
+## Stage 2: Observable State Encoder, Baseline Teachers, & Core Metrics
+- **Date:** 2026-09-14
+- **Prompt:** Prompt 3 of 7
+- **AI Contributions:**
+  - Implemented modular observable state encoder in `src/environment/state_encoder.py` mapping interaction histories to discrete feature tuples:
+    mastery bucket (5), last correct (2), recent accuracy (4), wrong streak (4), hint used (2). Exactly 320 discrete states ($5 \times 2 \times 4 \times 4 \times 2$), with bidirectional index conversion and feature toggling for ablation studies.
+  - Implemented `BaseTeacher` and `TeacherObservation` in `src/teachers/base_teacher.py`.
+  - Implemented `RandomTeacher` (uniform exploration) in `src/teachers/random_teacher.py`.
+  - Implemented `FixedTeacher` (alternating EXPLAIN $\to$ PRACTICE curriculum cycles) in `src/teachers/fixed_teacher.py`.
+  - Implemented competitive `RuleTeacher` (scaffolding via EXPLAIN, HINT on struggle, EXAMPLE, PRACTICE, and periodic prerequisite review) in `src/teachers/rule_teacher.py`.
+  - Implemented evaluation metrics suite in `src/evaluation/metrics.py` (learning gain, final mastery, steps to mastery, intervention efficiency, hint usage rate, action entropy).
+  - Implemented 16 new unit tests (32 tests total) in `tests/test_state_encoder.py`, `tests/test_teachers.py`, and `tests/test_metrics.py`.
+  - Authored 50-episode baseline comparison experiment script in `src/evaluation/baseline_comparison.py`.
+- **Verification & Review:**
+  - `python -m pytest` passed all 32 tests in 1.03s.
+  - Executed `python src/evaluation/baseline_comparison.py` running 50 paired episodes per teacher on identical cohorts of simulated learners.
+  - Verified that Rule teacher visibly outperforms Random and Fixed teachers on learning gain:
+    - Observable Learning Gain: Rule (0.031 $\pm$ 0.086) > Random (0.023 $\pm$ 0.067) > Fixed (0.013 $\pm$ 0.061).
+    - True Learning Gain: Rule (0.214 $\pm$ 0.177) > Fixed (0.193 $\pm$ 0.223) > Random (0.158 $\pm$ 0.172).
+    - Action Entropy: Random (2.225 bits, near max), Fixed (1.000 bits), Rule (1.384 bits).
+- **Deviations / Notes:**
+  - In `src/simulator/dynamics.py`, introduced `FORGETTING_SCALE = 0.08` to convert $\beta \in [0.01, 0.15]$ to per-step decay ($0.001 - 0.012$), matching observable estimator $\delta = 0.01$ and preventing unnatural curriculum-wide knowledge erasure over multi-concept episodes.

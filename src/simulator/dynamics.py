@@ -48,6 +48,11 @@ PRACTICE_BASE_EFFECT: float = 0.05
 # REVIEW_PREREQUISITE: Base mastery gain on the prerequisite concept before transfer.
 REVIEW_PREREQ_BASE_GAIN: float = 0.45
 
+# Forgetting scale factor per interaction step:
+# Converts theta.beta in [0.01, 0.15] to per-step unpracticed decay in [0.001, 0.015],
+# aligning with observable learner model delta (0.01) and ensuring multi-concept retention.
+FORGETTING_SCALE: float = 0.08
+
 # Steepness multiplier for the logistic difficulty-mastery response curve.
 SIGMOID_STEEPNESS: float = 4.0
 
@@ -145,11 +150,11 @@ def compute_correctness_probability(
         # HINT strongly boosts immediate correctness scaled by h
         p_action = p_base + (theta.h * HINT_ACCURACY_BOOST * (1.0 - p_base))
     elif action == PedagogicalAction.EXPLAIN:
-        # Explanation provides a modest immediate clarification boost
-        p_action = p_base + (0.10 * (1.0 - p_base))
+        # Explanation provides an immediate conceptual clarification boost
+        p_action = p_base + (0.35 * (1.0 - p_base))
     elif action == PedagogicalAction.EXAMPLE:
-        # Example provides modest scaffolding boost, higher for lower alpha
-        p_action = p_base + (0.12 * (1.0 - theta.alpha) * (1.0 - p_base))
+        # Example provides scaffolding boost, higher for lower alpha
+        p_action = p_base + (0.30 * (1.0 - theta.alpha) * (1.0 - p_base))
     else:
         p_action = p_base
 
@@ -176,7 +181,7 @@ def step_simulation(
     """Execute a single simulated pedagogical interaction step on a simulated learner.
 
     Updates internal true continuous mastery M(c, t) according to Roadmap Sec. 11.
-    Decays unpracticed concepts by beta.
+    Decays unpracticed concepts by beta * FORGETTING_SCALE.
     Propagates transfer ability tau if reviewing a prerequisite.
     """
     theta = learner.theta
@@ -215,7 +220,7 @@ def step_simulation(
         if correct:
             prereq_gain = theta.alpha * a_eff
         else:
-            prereq_gain = theta.alpha * a_eff * 0.20  # Partial exposure gain
+            prereq_gain = theta.alpha * a_eff * 0.30  # Partial exposure gain
 
         new_m_prereq = max(0.0, min(1.0, m_prereq_prev + prereq_gain))
         learner.set_true_mastery(prerequisite_id, new_m_prereq)
@@ -233,16 +238,17 @@ def step_simulation(
             learning_gain = theta.alpha * a_eff
         else:
             # Slower gain if incorrect (student attempted but missed)
-            learning_gain = theta.alpha * a_eff * 0.15
+            learning_gain = theta.alpha * a_eff * 0.35
 
         new_m_target = max(0.0, min(1.0, m_prev + learning_gain))
         learner.set_true_mastery(concept_id, new_m_target)
 
     # 4. Apply 1-step forgetting decay to all other unpracticed concepts
+    per_step_decay = theta.beta * FORGETTING_SCALE
     for other_c in learner.get_all_true_masteries():
         if other_c != concept_id and (action != PedagogicalAction.REVIEW_PREREQUISITE or other_c != prerequisite_id):
             curr = learner.get_true_mastery(other_c)
-            learner.set_true_mastery(other_c, max(0.0, curr - theta.beta))
+            learner.set_true_mastery(other_c, max(0.0, curr - per_step_decay))
 
     learner.record_practice(concept_id)
 
