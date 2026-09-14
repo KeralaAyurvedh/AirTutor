@@ -39,6 +39,8 @@ def run_tutoring_episode(
     curriculum: CurriculumRepository,
     max_steps: int = 30,
     initial_mastery: float = 0.10,
+    action_effect_multiplier: float = 1.0,
+    difficulty_offset: float = 0.0,
 ) -> tuple[EpisodeMetrics, float]:
     """Execute a complete simulated tutoring episode using observable teacher decisions.
 
@@ -122,12 +124,14 @@ def run_tutoring_episode(
         action_history.append(action)
 
         # 3. Step simulator (updates true continuous mastery M)
+        diff_val = max(1.0, min(5.0, float(concept.difficulty) + difficulty_offset))
         sim_res = step_simulation(
             learner=learner,
             action=action,
             concept_id=current_concept_id,
-            question_difficulty=concept.difficulty,
+            question_difficulty=diff_val,
             prerequisite_id=weakest_prereq_id,
+            action_effect_multiplier=action_effect_multiplier,
         )
 
         # 4. Update observable learner model (strictly from response correctness)

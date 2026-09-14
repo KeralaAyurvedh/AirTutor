@@ -10,9 +10,9 @@ Computes core research metrics across simulated tutoring episodes:
    (evaluating policy diversity vs. degenerate collapse).
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import math
-from typing import Mapping, Sequence
+from typing import Any, Mapping, Sequence
 
 import numpy as np
 
@@ -28,8 +28,9 @@ class EpisodeMetrics:
     intervention_efficiency: float
     hint_usage_rate: float
     action_entropy: float
+    action_counts: dict[str, int] = field(default_factory=dict)
 
-    def to_dict(self) -> dict[str, float]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "learning_gain": self.learning_gain,
             "final_mastery": self.final_mastery,
@@ -37,6 +38,7 @@ class EpisodeMetrics:
             "intervention_efficiency": self.intervention_efficiency,
             "hint_usage_rate": self.hint_usage_rate,
             "action_entropy": self.action_entropy,
+            "action_counts": dict(self.action_counts),
         }
 
 
@@ -135,6 +137,11 @@ def evaluate_episode(
     hint_rate = compute_hint_usage_rate(actions)
     entropy = compute_action_entropy(actions)
 
+    act_counts: dict[str, int] = {a.name: 0 for a in ACTIONS}
+    for a in actions:
+        key = a.name if isinstance(a, PedagogicalAction) else str(a)
+        act_counts[key] = act_counts.get(key, 0) + 1
+
     return EpisodeMetrics(
         learning_gain=gain,
         final_mastery=final_m,
@@ -142,6 +149,7 @@ def evaluate_episode(
         intervention_efficiency=efficiency,
         hint_usage_rate=hint_rate,
         action_entropy=entropy,
+        action_counts=act_counts,
     )
 
 

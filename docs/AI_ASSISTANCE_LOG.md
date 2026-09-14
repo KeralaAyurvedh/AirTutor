@@ -95,3 +95,43 @@ This log documents AI-assisted development across each stage of the AirTutor res
     - Policy Diversity: RL maintained healthy action entropy ($1.374$ bits) without collapsing into a single action.
 - **Deviations / Notes:**
   - None. All evaluation protocol, seed disjointness, and standing rules were strictly enforced.
+
+---
+
+## Stage 4: Reward v2/v3, Robustness Sweeps, & Ablation Studies
+- **Date:** 2026-09-14
+- **Prompt:** Prompt 5 of 7
+- **AI Contributions:**
+  - Implemented Reward v2 (retention signal + intervention cost penalty) and Reward v3 (transfer credit + excessive hint penalty + wasted step penalty) in `src/environment/rewards.py`.
+  - Added unified dispatcher `compute_reward` in `src/environment/rewards.py` with flexible kwargs and action enum/name conversion.
+  - Updated `src/rl/train.py` to support configurable `reward_version` and modular `state_config`, tracking action selection distributions during training.
+  - Implemented `src/evaluation/ablations.py` orchestrating:
+    - Reward ablation (v1 vs v2 vs v3) tracking quantitative metrics and qualitative action preference shifts.
+    - State representation ablation (Full 320 vs No-Hint 160 vs No-Accuracy 80).
+    - Population diversity ablation (training on narrow $\pm 10\%$ bounds vs default wide bounds, tested on wide held-out learners).
+  - Implemented `src/evaluation/sensitivity.py` executing a 12-condition parameter perturbation sweep:
+    $\alpha \pm 20\%$, $\beta \pm 20\%$, $\sigma \pm 50\%$, $A_{\text{effect}} \pm 20\%$, high-$h$ skew, curriculum difficulty $\pm 1.0$.
+  - Implemented publication-grade plotting utilities in `src/evaluation/plotting.py`:
+    - `plot_reward_ablation_comparison`: two-panel plot with learning gains and action preference distribution shifts.
+    - `plot_state_ablation_deltas`: bar chart of observable and true learning gain deltas relative to full state.
+    - `plot_sensitivity_sweep`: point-range horizontal bar plot displaying RL advantage over Rule baseline with robustness status color coding ("Holds", "Shrinks", "Vanishes").
+  - Implemented unified headless experiment orchestrator in `src/evaluation/run_stage4_experiments.py`.
+  - Added 8 unit tests across `tests/test_rewards.py`, `tests/test_ablations.py`, and `tests/test_sensitivity.py` (total 46 tests passing).
+- **Verification & Review:**
+  - Executed `python -m pytest` with 46/46 passing in 1.81s.
+  - Executed `python -m src.evaluation.run_stage4_experiments` saving all summary JSON files and plots under `experiments/`.
+  - Verified qualitative action preference shifts across rewards:
+    - Reward v1: Heavy reliance on EXPLAIN (61.4%) and EXAMPLE (26.1%); low PRACTICE (1.7%) and HINT (1.1%).
+    - Reward v2: PRACTICE frequency surged to 10.8% and HINT to 4.0% due to retention signal and step cost penalties.
+    - Reward v3: Balanced profile with EXPLAIN (51.6%), EXAMPLE (27.4%), PRACTICE (7.3%), HINT (6.2%), and REVIEW_PREREQUISITE (7.5%).
+  - Verified state representation ablation:
+    - Recent accuracy is strongly load-bearing (removing it drops gain by $-0.023$ and efficiency from 0.0030 to 0.0022).
+    - Hint awareness prevents false optimism (removing hint increases apparent observable gain by $+0.013$ but drops true latent gain by $-0.025$).
+  - Verified population diversity ablation:
+    - Training on narrow $\theta$ bounds degraded generalization on the wide held-out population ($-0.013$ observable gain, $-0.021$ true gain).
+  - Verified sensitivity sweep:
+    - RL advantage over Rule baseline reliably held across all 12 perturbation conditions ($\Delta \ge +0.104$, above $+0.020$ threshold).
+    - Headroom was narrowest under the Harder Curriculum condition ($\Delta = +0.104$).
+- **Deviations / Notes:**
+  - In `src/simulator/dynamics.py`, added optional `action_effect_multiplier` parameter defaulting to 1.0 to enable non-invasive perturbation of action dynamics in sensitivity tests without modifying global constants.
+

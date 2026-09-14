@@ -74,6 +74,7 @@ def compute_action_effect(
     action: PedagogicalAction,
     current_mastery: float,
     theta: LearnerParameters,
+    action_effect_multiplier: float = 1.0,
 ) -> float:
     """Compute smooth pedagogical action multiplier A_effect(action, M, theta).
 
@@ -87,25 +88,28 @@ def compute_action_effect(
     m = max(0.0, min(1.0, current_mastery))
 
     if action == PedagogicalAction.EXPLAIN:
-        return EXPLAIN_BASE_EFFECT
+        base = EXPLAIN_BASE_EFFECT
 
     elif action == PedagogicalAction.EXAMPLE:
         # Slower learners (lower alpha in [0.05, 0.35]) get a higher multiplier
-        return EXAMPLE_BASE_EFFECT * (1.0 - theta.alpha)
+        base = EXAMPLE_BASE_EFFECT * (1.0 - theta.alpha)
 
     elif action == PedagogicalAction.HINT:
         # Contributes little to durable mastery
-        return HINT_DURABLE_EFFECT
+        base = HINT_DURABLE_EFFECT
 
     elif action == PedagogicalAction.PRACTICE:
         # Desirable difficulty: peaks at M = 0.5 where 4 * M * (1 - M) = 1.0
         parabola = 4.0 * m * (1.0 - m)
-        return PRACTICE_BASE_EFFECT + (PRACTICE_PEAK_EFFECT * parabola)
+        base = PRACTICE_BASE_EFFECT + (PRACTICE_PEAK_EFFECT * parabola)
 
     elif action == PedagogicalAction.REVIEW_PREREQUISITE:
-        return REVIEW_PREREQ_BASE_GAIN
+        base = REVIEW_PREREQ_BASE_GAIN
 
-    raise ValueError(f"Unknown action: {action}")
+    else:
+        raise ValueError(f"Unknown action: {action}")
+
+    return base * action_effect_multiplier
 
 
 def compute_correctness_probability(
@@ -177,6 +181,7 @@ def step_simulation(
     prerequisite_id: str | None = None,
     steps_unpracticed: int | None = None,
     force_correct: bool | None = None,
+    action_effect_multiplier: float = 1.0,
 ) -> SimulationStepResult:
     """Execute a single simulated pedagogical interaction step on a simulated learner.
 
@@ -214,7 +219,7 @@ def step_simulation(
     if action == PedagogicalAction.REVIEW_PREREQUISITE and prerequisite_id is not None:
         # Reviewing prerequisite concept p
         m_prereq_prev = learner.get_true_mastery(prerequisite_id)
-        a_eff = compute_action_effect(action, m_prereq_prev, theta)
+        a_eff = compute_action_effect(action, m_prereq_prev, theta, action_effect_multiplier=action_effect_multiplier)
 
         # Prerequisite gain
         if correct:
@@ -232,7 +237,7 @@ def step_simulation(
 
     else:
         # Standard intervention on concept_id
-        a_eff = compute_action_effect(action, m_prev, theta)
+        a_eff = compute_action_effect(action, m_prev, theta, action_effect_multiplier=action_effect_multiplier)
 
         if correct:
             learning_gain = theta.alpha * a_eff

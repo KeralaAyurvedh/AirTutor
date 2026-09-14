@@ -22,7 +22,8 @@ import numpy as np
 
 from src.environment.actions import PedagogicalAction
 from src.environment.curriculum import CurriculumRepository, load_curriculum
-from src.environment.rewards import compute_reward_v1
+from src.environment.rewards import compute_reward
+from src.environment.state_encoder import StateEncoderConfig
 from src.learner_model.mastery import LearnerModel
 from src.rl.q_learning import (
     DEFAULT_DISCOUNT_FACTOR,
@@ -49,6 +50,8 @@ def train_agent_single_seed(
     epsilon_min: float = DEFAULT_EPSILON_MIN,
     epsilon_decay: float = DEFAULT_EPSILON_DECAY,
     initial_mastery: float = 0.10,
+    reward_version: str = "v1",
+    state_config: StateEncoderConfig | None = None,
 ) -> tuple[TabularQAgent, list[float]]:
     """Train a single TabularQAgent instance across training episodes."""
     agent = TabularQAgent(
@@ -57,9 +60,11 @@ def train_agent_single_seed(
         epsilon=epsilon_start,
         epsilon_min=epsilon_min,
         epsilon_decay=epsilon_decay,
+        state_config=state_config,
         seed=rl_seed,
         name=f"RL_Seed_{rl_seed}",
     )
+    agent.training_action_counts = {a.name: 0 for a in PedagogicalAction}
 
     concept_ids = curriculum.get_all_concept_ids()
     episode_rewards: list[float] = []
@@ -141,6 +146,7 @@ def train_agent_single_seed(
             # 2. Select action via epsilon-greedy policy
             action = agent.select_action(obs, greedy=False)
             action_idx = action.to_index()
+            agent.training_action_counts[action.name] += 1
 
             # Record pre-intervention estimated mastery on concept
             prev_m_hat = model.get_mastery(current_concept_id)
@@ -161,8 +167,17 @@ def train_agent_single_seed(
             # Post-intervention estimated mastery on concept
             new_m_hat = model.get_mastery(current_concept_id)
 
-            # 5. Compute Reward v1: r_t = M_hat(c, t+1) - M_hat(c, t)
-            reward_t = compute_reward_v1(prev_m_hat, new_m_hat)
+            # 5. Compute Reward (v1, v2, or v3)
+            reward_t = compute_reward(
+                reward_version=reward_version,
+                prev_mastery=prev_m_hat,
+                new_mastery=new_m_hat,
+                all_masteries=model.get_all_masteries(),
+                current_concept_id=current_concept_id,
+                action=action,
+                hint_used_last_step=hint_used_last,
+                is_correct=sim_res.correct,
+            )
             total_ep_reward += reward_t
 
             # 6. Update observable history for next state
@@ -209,6 +224,8 @@ def train_multi_seed(
     train_seed_start: int = 0,
     num_episodes: int = 300,
     curriculum: CurriculumRepository | None = None,
+    reward_version: str = "v1",
+    state_config: StateEncoderConfig | None = None,
     verbose: bool = True,
 ) -> tuple[list[TabularQAgent], dict[int, list[float]]]:
     """Train agents across multiple independent RL seeds."""
@@ -220,13 +237,15 @@ def train_multi_seed(
 
     for idx, seed in enumerate(rl_seeds, start=1):
         if verbose:
-            print(f"-> Training RL agent {idx}/{len(rl_seeds)} (seed={seed}) across {num_episodes} episodes...")
+            print(f"-> Training RL agent {idx}/{len(rl_seeds)} (seed={seed}, reward={reward_version}) across {num_episodes} episodes...")
 
         agent, ep_rewards = train_agent_single_seed(
             rl_seed=seed,
             learner_seeds=learner_seeds,
             curriculum=curr,
             num_episodes=num_episodes,
+            reward_version=reward_version,
+            state_config=state_config,
         )
         agents.append(agent)
         reward_trajectories[seed] = ep_rewards

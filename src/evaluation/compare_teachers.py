@@ -52,6 +52,9 @@ def evaluate_agent_on_held_out(
     eval_seeds: Sequence[int],
     curriculum: CurriculumRepository,
     max_steps: int = 30,
+    param_ranges: dict[str, tuple[float, float]] | None = None,
+    action_effect_multiplier: float = 1.0,
+    difficulty_offset: float = 0.0,
 ) -> tuple[list[EpisodeMetrics], list[float]]:
     """Evaluate a trained RL agent greedily on the held-out learner population."""
     concept_ids = curriculum.get_all_concept_ids()
@@ -63,6 +66,7 @@ def evaluate_agent_on_held_out(
             seed=seed,
             concepts=concept_ids,
             initial_mastery=0.10,
+            param_ranges=param_ranges,
         )
         # Note: TabularQAgent inherits from BaseTeacher and select_action has greedy=False by default.
         # Temporarily force epsilon to 0 for pure greedy policy evaluation
@@ -75,6 +79,8 @@ def evaluate_agent_on_held_out(
             curriculum=curriculum,
             max_steps=max_steps,
             initial_mastery=0.10,
+            action_effect_multiplier=action_effect_multiplier,
+            difficulty_offset=difficulty_offset,
         )
         agent.epsilon = saved_epsilon
 
