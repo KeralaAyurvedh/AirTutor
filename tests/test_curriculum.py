@@ -22,7 +22,7 @@ def test_load_gate_curriculum():
     assert len(module.concepts) == 5
 
     # Verify concepts
-    concept_ids = repo.get_all_concept_ids()
+    concept_ids = [c.concept_id for c in module.concepts]
     expected_ids = ["variables", "conditionals", "loops", "functions", "lists"]
     assert concept_ids == expected_ids
 

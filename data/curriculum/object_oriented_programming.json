@@ -1,0 +1,62 @@
+{
+  "module_id": "object_oriented_programming",
+  "title": "Object-Oriented Programming",
+  "concepts": [
+    {
+      "concept_id": "object_oriented_programming_fundamentals",
+      "name": "Object-Oriented Programming Fundamentals",
+      "prerequisites": [],
+      "difficulty": 2,
+      "questions": [
+        {
+          "question_id": "object_oriented_programming_q1",
+          "prompt": "What is the primary purpose of Object-Oriented Programming in software systems?",
+          "answer": "To organize and modularize program behavior and data.",
+          "type": "short"
+        },
+        {
+          "question_id": "object_oriented_programming_q2",
+          "prompt": "Which of the following best characterizes Object-Oriented Programming?",
+          "answer": "Structured abstraction",
+          "type": "mcq"
+        }
+      ],
+      "templates": {
+        "EXPLAIN": "An overview of Object-Oriented Programming fundamentals and core principles.",
+        "EXAMPLE": "An illustrative code example demonstrating Object-Oriented Programming.",
+        "HINT": "Think about how Object-Oriented Programming manages abstraction and scope.",
+        "PRACTICE": "Write a brief definition or implementation of Object-Oriented Programming.",
+        "REVIEW_PREREQUISITE": "Review foundational concepts preceding this topic."
+      }
+    },
+    {
+      "concept_id": "object_oriented_programming_applications",
+      "name": "Object-Oriented Programming Applications",
+      "prerequisites": [
+        "object_oriented_programming_fundamentals"
+      ],
+      "difficulty": 3,
+      "questions": [
+        {
+          "question_id": "object_oriented_programming_q3",
+          "prompt": "How do applications of Object-Oriented Programming handle edge cases?",
+          "answer": "By validating input constraints and handling errors gracefully.",
+          "type": "short"
+        },
+        {
+          "question_id": "object_oriented_programming_q4",
+          "prompt": "Write code applying Object-Oriented Programming.",
+          "answer": "pass",
+          "type": "code"
+        }
+      ],
+      "templates": {
+        "EXPLAIN": "Advanced practical applications of Object-Oriented Programming.",
+        "EXAMPLE": "Application code example demonstrating Object-Oriented Programming.",
+        "HINT": "Check prerequisite relationships in Object-Oriented Programming.",
+        "PRACTICE": "Implement a complete routine using Object-Oriented Programming.",
+        "REVIEW_PREREQUISITE": "Review Object-Oriented Programming Fundamentals before applying them."
+      }
+    }
+  ]
+}

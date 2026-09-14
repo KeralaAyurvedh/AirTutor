@@ -27,6 +27,7 @@ class Concept:
     prerequisites: list[str]
     difficulty: int
     questions: list[Question] = field(default_factory=list)
+    templates: dict[str, str] = field(default_factory=dict)
 
     def get_question(self, question_id: str) -> Question | None:
         for q in self.questions:
@@ -118,6 +119,7 @@ def load_module_from_file(file_path: Path | str) -> CurriculumModule:
                 prerequisites=list(rc.get("prerequisites", [])),
                 difficulty=int(rc.get("difficulty", 1)),
                 questions=questions,
+                templates=dict(rc.get("templates", {})),
             )
         )
 

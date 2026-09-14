@@ -135,3 +135,33 @@ This log documents AI-assisted development across each stage of the AirTutor res
 - **Deviations / Notes:**
   - In `src/simulator/dynamics.py`, added optional `action_effect_multiplier` parameter defaulting to 1.0 to enable non-invasive perturbation of action dynamics in sensitivity tests without modifying global constants.
 
+---
+
+## Stage 5: Flexible LLM Delivery Layer, Schema Validation, & Extensibility
+- **Date:** 2026-09-14
+- **Prompt:** Prompt 6 of 7
+- **AI Contributions:**
+  - Designed and implemented abstract provider interface `LLMProvider` and response container `TutorResponse` in `src/llm/provider.py`.
+  - Implemented config-driven factory function `get_llm_provider()` reading provider selection, model names, and API keys strictly via environment variables (`LLM_PROVIDER`, `LLM_MODEL`, `LLM_API_KEY`, `GEMINI_API_KEY`, `LLM_BASE_URL`).
+  - Implemented `GeminiAdapter` in `src/llm/providers/gemini.py` using official `google-genai` SDK (`genai.Client().models.generate_content`) with automatic try/except and timeout wrapping that falls back gracefully to `OfflineTemplateAdapter`.
+  - Implemented `OpenAICompatibleAdapter` in `src/llm/providers/openai_compatible.py` calling `/chat/completions` via Python standard library `urllib.request` (zero extra dependencies, universal compatibility with OpenAI, Grok/xAI, Ollama, vLLM).
+  - Implemented `OfflineTemplateAdapter` in `src/llm/providers/offline.py` retrieving pre-written curriculum templates with deterministic generic educational fallbacks.
+  - Added concept-level `templates` to `data/curriculum/gate_programming_fundamentals.json` across all 5 concepts and 5 pedagogical actions.
+  - Implemented curriculum JSON schema validation suite in `src/llm/validation.py` (`validate_curriculum_json`) checking required fields, unique concept IDs, valid question types (`mcq`, `short`, `code`), non-empty prompts/answers, and prerequisite graph validity without self-loops or cycles.
+  - Implemented "Add Material" flow in `src/llm/add_material.py` (`add_module_from_notes`) transforming freeform lecture notes into schema-valid curriculum JSON modules with a 1-retry error feedback loop.
+  - Authored comprehensive test suites:
+    - `tests/test_llm_provider.py`: 8 tests verifying distinct action rendering, Gemini mocking, OpenAI-compatible mocking, offline fallback on simulated API errors, and factory switching.
+    - `tests/test_validation.py`: 11 tests verifying schema validation edge cases and end-to-end curriculum generation from notes.
+  - Authored demonstration script `src/llm/demo_llm_layer.py` validating all 4 Definition of Done requirements.
+- **Verification & Review:**
+  - Ran `python -m pytest` with 65/65 tests passing in 4.80s.
+  - Ran `python src/llm/demo_llm_layer.py` verifying:
+    - `EXPLAIN` and `HINT` produce visibly distinct text for the same concept.
+    - Live model failure or missing key safely serves offline template with zero crashes.
+    - OpenAI-compatible adapter operates under identical interface.
+    - Freeform notes on "Object-Oriented Programming" were converted into `data/curriculum/object_oriented_programming.json` and cleanly loaded into `CurriculumRepository`.
+  - Verified architectural boundary: Research Core (`src/environment`, `src/learner_model`, `src/simulator`, `src/rl`, `src/teachers`, `src/evaluation`) has zero LLM imports.
+- **Deviations / Notes:**
+  - Added `templates` field to `Concept` dataclass in `src/environment/curriculum.py` to allow curriculum JSON files to optionally bundle pre-written offline pedagogical templates.
+
+

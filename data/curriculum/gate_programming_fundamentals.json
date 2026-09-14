@@ -44,12 +44,21 @@
           "answer": "immutable",
           "type": "short"
         }
-      ]
+      ],
+      "templates": {
+        "EXPLAIN": "Variables are named containers that store values in memory. In Python, variables are dynamically typed, meaning the interpreter determines the type at runtime based on the assigned value. Fundamental types include int, float, str, and bool.",
+        "EXAMPLE": "Example of variable assignment and type checking:\n```python\nx = 42          # int\npi = 3.14159    # float\nname = 'GATE'   # str\nprint(type(x))  # <class 'int'>\n```",
+        "HINT": "Hint: Remember that integer division in Python 3 using / always produces a float (e.g. 7 / 2 == 3.5), whereas // performs floor division.",
+        "PRACTICE": "Practice challenge: Write an expression that converts a string representation of an integer to an int and adds 10.",
+        "REVIEW_PREREQUISITE": "Variables are the foundational building block of programming. All higher structures rely on storing and retrieving variable states."
+      }
     },
     {
       "concept_id": "conditionals",
       "name": "Conditionals & Branching",
-      "prerequisites": ["variables"],
+      "prerequisites": [
+        "variables"
+      ],
       "difficulty": 2,
       "questions": [
         {
@@ -88,12 +97,21 @@
           "answer": "assignment vs equality comparison",
           "type": "short"
         }
-      ]
+      ],
+      "templates": {
+        "EXPLAIN": "Conditionals control program execution flow using boolean evaluation. An if statement evaluates a truth condition; elif allows chaining multiple sequential checks; and else acts as a catch-all when no prior conditions are met.",
+        "EXAMPLE": "Example of conditional branching:\n```python\nscore = 85\nif score >= 90:\n    grade = 'A'\nelif score >= 75:\n    grade = 'B'\nelse:\n    grade = 'C'\n```",
+        "HINT": "Hint: In Python, empty collections, empty strings, 0, and None evaluate to False in a boolean context; all non-empty values evaluate to True.",
+        "PRACTICE": "Practice challenge: Given a number n, write a conditional statement checking whether n is both positive and even.",
+        "REVIEW_PREREQUISITE": "Recall from Variables that boolean expressions evaluate to True or False, which directly govern which conditional branch executes."
+      }
     },
     {
       "concept_id": "loops",
       "name": "Loops & Iteration",
-      "prerequisites": ["conditionals"],
+      "prerequisites": [
+        "conditionals"
+      ],
       "difficulty": 3,
       "questions": [
         {
@@ -132,12 +150,22 @@
           "answer": "O(N)",
           "type": "mcq"
         }
-      ]
+      ],
+      "templates": {
+        "EXPLAIN": "Loops automate iterative repetition. A while loop repeatedly executes while a condition evaluates to True. A for loop iterates over elements in a sequence or iterable, commonly paired with range(start, stop, step).",
+        "EXAMPLE": "Example of iterative loops:\n```python\ntotal = 0\nfor i in range(1, 6):\n    total += i\nprint(total)  # Sum of 1 to 5 = 15\n```",
+        "HINT": "Hint: Remember that range(start, stop) is inclusive of start but exclusive of stop. Also, remember break terminates the loop, while continue skips to the next iteration.",
+        "PRACTICE": "Practice challenge: Write a loop that counts down from 5 to 1 and prints each number.",
+        "REVIEW_PREREQUISITE": "Recall that loops depend on conditionals to test loop continuation conditions and terminate iteration."
+      }
     },
     {
       "concept_id": "functions",
       "name": "Functions & Scope",
-      "prerequisites": ["variables", "conditionals"],
+      "prerequisites": [
+        "variables",
+        "conditionals"
+      ],
       "difficulty": 3,
       "questions": [
         {
@@ -176,12 +204,22 @@
           "answer": "Local, Enclosing, Global, Built-in",
           "type": "mcq"
         }
-      ]
+      ],
+      "templates": {
+        "EXPLAIN": "Functions encapsulate reusable logic into modular blocks defined with the def keyword. Functions accept parameters, execute statements, and return results via return. Local variables exist only within the function scope according to the LEGB rule.",
+        "EXAMPLE": "Example of function definition and return:\n```python\ndef is_prime(n):\n    if n <= 1:\n        return False\n    for i in range(2, int(n**0.5) + 1):\n        if n % i == 0:\n            return False\n    return True\n```",
+        "HINT": "Hint: Default parameter values are evaluated once when the function is defined, not on each call. Never use mutable defaults like [] or {}.",
+        "PRACTICE": "Practice challenge: Define a function compute_factorial(n) that computes and returns the factorial of positive integer n.",
+        "REVIEW_PREREQUISITE": "Functions commonly combine loops and conditionals to process input parameters and compute return values."
+      }
     },
     {
       "concept_id": "lists",
       "name": "Arrays & Lists",
-      "prerequisites": ["loops", "functions"],
+      "prerequisites": [
+        "loops",
+        "functions"
+      ],
       "difficulty": 4,
       "questions": [
         {
@@ -220,7 +258,14 @@
           "answer": "IndexError",
           "type": "mcq"
         }
-      ]
+      ],
+      "templates": {
+        "EXPLAIN": "Lists are ordered, mutable sequences that support indexing, slicing, and dynamic resizing. Accessing elements by index is O(1); appending to the end is amortized O(1); inserting or deleting at arbitrary positions is O(N) due to element shifting.",
+        "EXAMPLE": "Example of list operations and list comprehension:\n```python\nnums = [1, 2, 3, 4, 5]\nsquares = [x**2 for x in nums if x % 2 == 1]\nprint(squares)  # [1, 9, 25]\n```",
+        "HINT": "Hint: Python slicing syntax list[start:stop:step] returns a new shallow copy of the sublist. Negative indices count backward from the end.",
+        "PRACTICE": "Practice challenge: Write a one-line list comprehension that extracts all even numbers from a given list of integers.",
+        "REVIEW_PREREQUISITE": "Lists are sequences iterated over by loops and frequently processed or returned by modular functions."
+      }
     }
   ]
 }

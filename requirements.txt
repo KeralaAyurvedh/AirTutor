@@ -4,3 +4,4 @@ matplotlib
 streamlit
 python-dotenv
 pytest
+google-genai
