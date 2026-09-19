@@ -88,6 +88,7 @@ def train_agent_single_seed(
         recent_responses: list[bool] = []
         wrong_streak: int = 0
         hint_used_last: bool = False
+        ep_actions: list[PedagogicalAction] = []
 
         total_ep_reward = 0.0
 
@@ -147,9 +148,13 @@ def train_agent_single_seed(
             action = agent.select_action(obs, greedy=False)
             action_idx = action.to_index()
             agent.training_action_counts[action.name] += 1
+            ep_actions.append(action)
+            recent_act_window = ep_actions[-6:]
+            rolling_hint_rate = float(sum(1 for a in recent_act_window if a == PedagogicalAction.HINT) / len(recent_act_window))
 
             # Record pre-intervention estimated mastery on concept
             prev_m_hat = model.get_mastery(current_concept_id)
+            prev_all_m = model.get_all_masteries()
 
             # 3. Step simulator (updates true continuous mastery M)
             sim_res = step_simulation(
@@ -162,20 +167,23 @@ def train_agent_single_seed(
 
             # 4. Update observable learner model
             model.update(current_concept_id, correct=sim_res.correct)
-            model.step_decay_unpracticed(current_concept_id)
+            model.step_decay_unpracticed(current_concept_id, only_engaged=True)
 
             # Post-intervention estimated mastery on concept
             new_m_hat = model.get_mastery(current_concept_id)
+            new_all_m = model.get_all_masteries()
 
             # 5. Compute Reward (v1, v2, or v3)
             reward_t = compute_reward(
                 reward_version=reward_version,
                 prev_mastery=prev_m_hat,
                 new_mastery=new_m_hat,
-                all_masteries=model.get_all_masteries(),
+                prev_all_masteries=prev_all_m,
+                new_all_masteries=new_all_m,
                 current_concept_id=current_concept_id,
                 action=action,
                 hint_used_last_step=hint_used_last,
+                rolling_hint_rate=rolling_hint_rate,
                 is_correct=sim_res.correct,
             )
             total_ep_reward += reward_t

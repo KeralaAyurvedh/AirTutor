@@ -71,7 +71,8 @@ class LearnerModel:
         if steps_unpracticed is None:
             # Derived from turn tracking
             last_step = self._last_practiced_step[concept_id]
-            steps_unpracticed = max(0, (self._current_step - 1) - last_step)
+            # Prior unpracticed decay only applies after a concept has been introduced/practiced
+            steps_unpracticed = 0 if last_step == 0 else max(0, (self._current_step - 1) - last_step)
 
         current_m = self._mastery[concept_id]
         target = 1.0 if correct else 0.0
@@ -96,8 +97,14 @@ class LearnerModel:
         self._mastery[concept_id] = decayed
         return decayed
 
-    def step_decay_unpracticed(self, practiced_concept_id: str) -> None:
-        """Decay all concepts other than the one currently practiced by one step."""
+    def step_decay_unpracticed(self, practiced_concept_id: str, only_engaged: bool = False) -> None:
+        """Decay all concepts other than the one currently practiced by one step.
+
+        If only_engaged is True, only concepts that have actually been practiced
+        previously (_last_practiced_step > 0) undergo forgetting decay.
+        """
         for c in self._mastery:
             if c != practiced_concept_id:
+                if only_engaged and self._last_practiced_step[c] == 0:
+                    continue
                 self._mastery[c] = max(0.0, min(1.0, self._mastery[c] - self.delta))

@@ -258,6 +258,7 @@ def run_population_diversity_ablation(
                 recent_responses: list[bool] = []
                 wrong_streak = 0
                 hint_used_last = False
+                ep_actions: list[PedagogicalAction] = []
 
                 for step in range(1, 31):
                     concept = curr.get_concept(current_concept_id)
@@ -307,7 +308,12 @@ def run_population_diversity_ablation(
                     state_idx = agent.get_state_index(obs)
                     action = agent.select_action(obs, greedy=False)
                     action_idx = action.to_index()
+                    ep_actions.append(action)
+                    recent_act_window = ep_actions[-6:]
+                    rolling_hint_rate = float(sum(1 for a in recent_act_window if a == PedagogicalAction.HINT) / len(recent_act_window))
+
                     prev_m_hat = model.get_mastery(current_concept_id)
+                    prev_all_m = model.get_all_masteries()
 
                     sim_res = step_simulation(
                         learner=learner,
@@ -317,17 +323,20 @@ def run_population_diversity_ablation(
                         prerequisite_id=weakest_prereq_id,
                     )
                     model.update(current_concept_id, correct=sim_res.correct)
-                    model.step_decay_unpracticed(current_concept_id)
+                    model.step_decay_unpracticed(current_concept_id, only_engaged=True)
                     new_m_hat = model.get_mastery(current_concept_id)
+                    new_all_m = model.get_all_masteries()
 
                     reward_t = compute_reward(
                         reward_version=reward_version,
                         prev_mastery=prev_m_hat,
                         new_mastery=new_m_hat,
-                        all_masteries=model.get_all_masteries(),
+                        prev_all_masteries=prev_all_m,
+                        new_all_masteries=new_all_m,
                         current_concept_id=current_concept_id,
                         action=action,
                         hint_used_last_step=hint_used_last,
+                        rolling_hint_rate=rolling_hint_rate,
                         is_correct=sim_res.correct,
                     )
 

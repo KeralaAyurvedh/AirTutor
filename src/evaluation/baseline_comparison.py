@@ -60,6 +60,7 @@ def run_tutoring_episode(
 
     action_history: list[PedagogicalAction] = []
     obs_mastery_history: list[dict[str, float]] = []
+    engaged_concepts: set[str] = set()
 
     last_response_correct: bool | None = None
     recent_responses: list[bool] = []
@@ -123,20 +124,34 @@ def run_tutoring_episode(
         action = teacher.select_action(obs)
         action_history.append(action)
 
+        # Determine target concept and simulation parameters
+        if action == PedagogicalAction.REVIEW_PREREQUISITE and weakest_prereq_id is not None:
+            active_cid = weakest_prereq_id
+            active_diff = float(curriculum.get_concept(weakest_prereq_id).difficulty)
+            sim_cid = weakest_prereq_id
+            sim_prereq = None
+        else:
+            active_cid = current_concept_id
+            active_diff = float(concept.difficulty)
+            sim_cid = current_concept_id
+            sim_prereq = weakest_prereq_id
+
+        engaged_concepts.add(active_cid)
+        diff_val = max(1.0, min(5.0, active_diff + difficulty_offset))
+
         # 3. Step simulator (updates true continuous mastery M)
-        diff_val = max(1.0, min(5.0, float(concept.difficulty) + difficulty_offset))
         sim_res = step_simulation(
             learner=learner,
             action=action,
-            concept_id=current_concept_id,
+            concept_id=sim_cid,
             question_difficulty=diff_val,
-            prerequisite_id=weakest_prereq_id,
+            prerequisite_id=sim_prereq,
             action_effect_multiplier=action_effect_multiplier,
         )
 
         # 4. Update observable learner model (strictly from response correctness)
-        model.update(current_concept_id, correct=sim_res.correct)
-        model.step_decay_unpracticed(current_concept_id)
+        model.update(active_cid, correct=sim_res.correct)
+        model.step_decay_unpracticed(active_cid, only_engaged=True)
 
         # 5. Update history features
         last_response_correct = sim_res.correct
@@ -163,9 +178,11 @@ def run_tutoring_episode(
         mastery_history=obs_mastery_history,
         mastery_threshold=0.75,
         max_steps=max_steps,
+        engaged_concepts=engaged_concepts,
     )
 
-    true_gain = float(np.mean([final_true_m[c] - initial_true_m[c] for c in concept_ids]))
+    engaged_list = list(engaged_concepts) if engaged_concepts else concept_ids
+    true_gain = float(np.mean([final_true_m[c] - initial_true_m[c] for c in engaged_list]))
     return metrics, true_gain
 
 

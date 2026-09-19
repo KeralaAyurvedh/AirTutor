@@ -191,5 +191,24 @@ This log documents AI-assisted development across each stage of the AirTutor res
 - **Deviations / Notes:**
   - Cached pre-trained agent loading in `app/main.py` with automatic fallback to on-the-fly training (~0.6s) to ensure instant, error-free startup from a completely clean clone without requiring pre-existing `.npy` files.
 
+---
+
+## Verification Audit & Research Bug-Fixes
+- **Date:** 2026-09-19
+- **Prompt:** Verification Audit & Follow-Up Bug-Fixes
+- **AI Contributions:**
+  - **Observable Learning Gain & Decay:** Updated `src/learner_model/mastery.py` so unpracticed decay penalty does not apply to unintroduced concepts (`_last_practiced_step == 0`), and added `only_engaged=True` decay mode.
+  - **Targeted Metric Evaluation:** Updated `src/evaluation/metrics.py` (`compute_learning_gain`, `compute_final_mastery`, `evaluate_episode`) to compute learning gain and final mastery over concepts genuinely engaged during the session.
+  - **Prerequisite Review Execution:** Fixed `run_tutoring_episode` in `src/evaluation/baseline_comparison.py` to route `REVIEW_PREREQUISITE` to the actual prerequisite concept and its difficulty in simulation and learner model updates, resolving the persistent prerequisite loop.
+  - **Reward v2 Cost:** Added explicit `HINT_PENALTY_V2 = 0.04` in `src/environment/rewards.py` and passed `prev_all_masteries` from `train.py` and `ablations.py` to activate `retention_signal`.
+  - **Reward v3 Rolling Hint Penalty:** Implemented rolling episode hint rate penalty in `compute_reward_v3` (`ROLLING_HINT_PENALTY_V3 = 0.25` when hint rate exceeds `0.15`), and penalized `HINT` on mastered concepts ($\ge 0.85$).
+  - **Re-executed Benchmarks & Sweeps:** Re-ran Stage 2 (`baseline_comparison.py`), Stage 3 (`compare_teachers.py`), and Stage 4 (`run_stage4_experiments.py`).
+- **Verification & Review:**
+  - In Stage 2 baseline comparison: Rule (0.034) visibly beats Random (0.021) and Fixed (-0.057) on observable learning gain; on true latent gain, Rule (0.247) beats Random (0.075) and Fixed (0.055).
+  - In Stage 3 held-out comparison: Stage 2 and Stage 3 now agree; Rule (0.052) beats Random (0.019) and Fixed (-0.057), and RL (0.115) beats Rule.
+  - In Stage 4 reward ablation: Hint usage rate decreases monotonically across reward versions: v1 (13.0%) $\to$ v2 (0.0%) $\to$ v3 (0.0%).
+  - In Stage 4 sensitivity sweep: Rule shows positive mean learning gain across all 12 perturbation conditions.
+  - Full test suite: 68/68 tests pass in pytest with zero regressions, including all 5 Stage-1 simulator sanity checks.
+
 
 

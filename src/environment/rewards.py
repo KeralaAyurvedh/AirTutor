@@ -20,7 +20,10 @@ from typing import Any, Callable, Mapping
 # --- Hyperparameters for Reward v2 & v3 (Roadmap Sec. 15) ---
 LAMBDA_RET_V2: float = 0.50          # Weight for unpracticed concept retention signal
 LAMBDA_COST_V2: float = 0.015        # Step intervention cost penalty
-EXCESSIVE_HINT_PENALTY_V3: float = 0.05  # Penalty if HINT is chosen consecutively
+HINT_PENALTY_V2: float = 0.04        # Penalty applied when HINT is used in Reward v2
+EXCESSIVE_HINT_PENALTY_V3: float = 0.05  # Base penalty if HINT is chosen consecutively
+ROLLING_HINT_PENALTY_V3: float = 0.25    # Strong penalty when rolling hint rate exceeds threshold
+HINT_RATE_THRESHOLD_V3: float = 0.15     # Allowable rolling hint rate threshold
 WASTED_STEP_PENALTY_V3: float = 0.05    # Penalty for drilling already-mastered concepts (>= 0.85)
 
 
@@ -41,9 +44,11 @@ def compute_reward_v2(
     concept_id: str | None = None,
     lambda_ret: float = LAMBDA_RET_V2,
     lambda_cost: float = LAMBDA_COST_V2,
+    lambda_hint: float = HINT_PENALTY_V2,
+    action_name: str | None = None,
     **kwargs: Any,
 ) -> float:
-    """Reward v2: Mastery gain + retention signal on other concepts - intervention cost."""
+    """Reward v2: Mastery gain + retention signal on other concepts - intervention cost - hint penalty."""
     gain = new_concept_mastery - prev_concept_mastery
 
     # Retention signal: net change across other concepts (typically negative or zero from decay)
@@ -58,7 +63,15 @@ def compute_reward_v2(
             retention_signal = float(sum(other_deltas))
 
     intervention_cost = 1.0
-    return float(gain + (lambda_ret * retention_signal) - (lambda_cost * intervention_cost))
+
+    act = action_name
+    if act is None and "action" in kwargs:
+        a_val = kwargs["action"]
+        act = a_val.name if hasattr(a_val, "name") else str(a_val)
+
+    hint_penalty = lambda_hint if (act == "HINT") else 0.0
+
+    return float(gain + (lambda_ret * retention_signal) - (lambda_cost * intervention_cost) - hint_penalty)
 
 
 def compute_reward_v3(
@@ -72,6 +85,8 @@ def compute_reward_v3(
     concept_id: str | None = None,
     lambda_ret: float = LAMBDA_RET_V2,
     lambda_cost: float = LAMBDA_COST_V2,
+    lambda_hint: float = HINT_PENALTY_V2,
+    rolling_hint_rate: float | None = None,
     **kwargs: Any,
 ) -> float:
     """Reward v3: Reward v2 + transfer credit - excessive hint penalty - wasted step penalty."""
@@ -83,20 +98,33 @@ def compute_reward_v3(
         concept_id=concept_id,
         lambda_ret=lambda_ret,
         lambda_cost=lambda_cost,
+        lambda_hint=lambda_hint,
+        action_name=action_name,
     )
 
     # 1. Transfer credit: reward gain propagated from reviewing prerequisite
     transfer_term = float(prerequisite_gain * 0.50)
 
-    # 2. Excessive hint penalty: penalize selecting HINT when hint was already used on last step
+    # 2. Excessive hint penalty:
+    # Penalizes over-hinting using a rolling hint rate sized to outweigh immediate accuracy gains
     excessive_hint_penalty = 0.0
-    if action_name == "HINT" and hint_used_last_step:
-        excessive_hint_penalty = EXCESSIVE_HINT_PENALTY_V3
+    if action_name == "HINT":
+        if rolling_hint_rate is not None:
+            if rolling_hint_rate > HINT_RATE_THRESHOLD_V3:
+                excessive_hint_penalty = ROLLING_HINT_PENALTY_V3
+            elif hint_used_last_step:
+                excessive_hint_penalty = EXCESSIVE_HINT_PENALTY_V3
+        elif hint_used_last_step:
+            excessive_hint_penalty = EXCESSIVE_HINT_PENALTY_V3
 
     # 3. Wasted step penalty: penalize re-teaching a concept that is already mastered (>= 0.85)
+    # HINT on an already-mastered concept is especially wasteful and penalized further
     wasted_step_penalty = 0.0
     if prev_concept_mastery >= 0.85 and action_name != "REVIEW_PREREQUISITE":
-        wasted_step_penalty = WASTED_STEP_PENALTY_V3
+        if action_name == "HINT":
+            wasted_step_penalty = WASTED_STEP_PENALTY_V3 * 2.0
+        else:
+            wasted_step_penalty = WASTED_STEP_PENALTY_V3
 
     return float(r_v2 + transfer_term - excessive_hint_penalty - wasted_step_penalty)
 
@@ -118,6 +146,7 @@ def compute_reward(
     prev_all_masteries: Mapping[str, float] | None = None,
     new_all_masteries: Mapping[str, float] | None = None,
     concept_id: str | None = None,
+    rolling_hint_rate: float | None = None,
     **kwargs: Any,
 ) -> float:
     """Unified reward dispatcher accepting standard or keyword aliases."""
@@ -135,6 +164,7 @@ def compute_reward(
     cid = concept_id or kwargs.get("current_concept_id")
     prev_all = prev_all_masteries or kwargs.get("prev_all_masteries")
     new_all = new_all_masteries or kwargs.get("all_masteries") or kwargs.get("new_all_masteries")
+    r_hint_rate = rolling_hint_rate if rolling_hint_rate is not None else kwargs.get("rolling_hint_rate")
 
     fn = REWARD_FUNCTIONS.get(reward_version, compute_reward_v1)
     return fn(
@@ -146,4 +176,5 @@ def compute_reward(
         prev_all_masteries=prev_all,
         new_all_masteries=new_all,
         concept_id=cid,
+        rolling_hint_rate=r_hint_rate,
     )

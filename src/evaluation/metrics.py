@@ -45,20 +45,33 @@ class EpisodeMetrics:
 def compute_learning_gain(
     initial_mastery: Mapping[str, float],
     final_mastery: Mapping[str, float],
+    engaged_concepts: Sequence[str] | set[str] | None = None,
 ) -> float:
-    """Compute mean mastery increase across all concepts over an episode."""
-    common_concepts = set(initial_mastery.keys()).intersection(final_mastery.keys())
-    if not common_concepts:
+    """Compute mean mastery increase across engaged concepts over an episode."""
+    if engaged_concepts is not None:
+        concepts = [c for c in engaged_concepts if c in initial_mastery and c in final_mastery]
+    else:
+        concepts = list(set(initial_mastery.keys()).intersection(final_mastery.keys()))
+
+    if not concepts:
         return 0.0
-    gains = [final_mastery[c] - initial_mastery[c] for c in common_concepts]
+    gains = [final_mastery[c] - initial_mastery[c] for c in concepts]
     return float(np.mean(gains))
 
 
-def compute_final_mastery(final_mastery: Mapping[str, float]) -> float:
-    """Compute mean final mastery across all concepts."""
-    if not final_mastery:
+def compute_final_mastery(
+    final_mastery: Mapping[str, float],
+    engaged_concepts: Sequence[str] | set[str] | None = None,
+) -> float:
+    """Compute mean final mastery across engaged concepts."""
+    if engaged_concepts is not None:
+        concepts = [c for c in engaged_concepts if c in final_mastery]
+    else:
+        concepts = list(final_mastery.keys())
+
+    if not concepts:
         return 0.0
-    return float(np.mean(list(final_mastery.values())))
+    return float(np.mean([final_mastery[c] for c in concepts]))
 
 
 def compute_steps_to_mastery(
@@ -124,10 +137,11 @@ def evaluate_episode(
     mastery_history: Sequence[Mapping[str, float]] | None = None,
     mastery_threshold: float = 0.75,
     max_steps: int = 30,
+    engaged_concepts: Sequence[str] | set[str] | None = None,
 ) -> EpisodeMetrics:
     """Compute all 6 roadmap metrics for an episode."""
-    gain = compute_learning_gain(initial_mastery, final_mastery)
-    final_m = compute_final_mastery(final_mastery)
+    gain = compute_learning_gain(initial_mastery, final_mastery, engaged_concepts=engaged_concepts)
+    final_m = compute_final_mastery(final_mastery, engaged_concepts=engaged_concepts)
     total_steps = len(actions)
 
     traj = mastery_history if mastery_history is not None else [final_mastery]
