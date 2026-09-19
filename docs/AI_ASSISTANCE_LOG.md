@@ -210,5 +210,22 @@ This log documents AI-assisted development across each stage of the AirTutor res
   - In Stage 4 sensitivity sweep: Rule shows positive mean learning gain across all 12 perturbation conditions.
   - Full test suite: 68/68 tests pass in pytest with zero regressions, including all 5 Stage-1 simulator sanity checks.
 
+---
 
-
+## Investigation: Observable vs. True Latent Mastery Discrepancy & Reward Generalization
+- **Date:** 2026-09-19
+- **Prompt:** Investigation Task (RL vs. Rule True/Observable Gap Analysis)
+- **AI Contributions:**
+  - Investigated the empirical discrepancy in Stage 3 held-out benchmark where RL (v1) outperformed Rule on observable learning gain (0.115 vs 0.052) but lagged Rule on true latent gain (0.228 vs 0.263).
+  - Extracted and analyzed per-episode action distributions across 100 held-out learners (3,000 steps for Rule; 15,000 steps for 5-seed RL).
+  - Identified the root cause of the divergence:
+    1. **Rule Teacher Mechanism:** Rule selected `REVIEW_PREREQUISITE` in 71.07% of interaction steps. In the simulator, prerequisite review boosts both the prerequisite concept ($a_{\text{eff}} = 0.45$) and the dependent concept via latent transfer ($\tau \cdot \text{prereq\_gain}$), while shielding both from forgetting decay. In contrast, the observable estimator (`LearnerModel`) only updates the prerequisite, affords zero transfer credit to the dependent concept, and explicitly decays other concepts ($\delta = 0.01$). Thus, Rule accumulated large true simulator gains that were invisible to the observable estimator.
+    2. **RL v1 Reward Hacking:** Under Reward v1, RL chose `HINT` 13.33% of the time. While `HINT` boosts response correctness ($P(\text{correct})$) and yields immediate $+0.20(1 - \hat{M})$ jumps in the observable model, its simulator effect is minimal ($a_{\text{eff}} = 0.10$, vs $0.55$ for `EXPLAIN`). RL (v1) thus learned to exploit hints to inflate observable gains without building true latent mastery.
+  - Retrained and re-evaluated RL under Reward v2 and v3 across all 5 Stage-3 seeds on the identical held-out population:
+    - Under v2 and v3, hint usage dropped to 0.00%, and actions shifted to durable interventions (`EXPLAIN` ~55–71%, `EXAMPLE` ~25–37%).
+    - True learning gain rose from 0.2276 (v1) to 0.2820 (v2) and 0.2817 (v3), exceeding Rule's 0.2632.
+    - The gap between true and observable gain persisted across all teachers (~2x for RL, ~5x for Rule) due to `LearnerModel` asymmetric negative penalties and unobserved transfer dynamics.
+  - Analyzed Q-tables and simulator dynamics regarding `HINT`:
+    - In v2 and v3, `HINT` was never chosen greedily (argmax in 0% of visited states in v3).
+    - Mathematical derivation demonstrated that in the simulator dynamics, even with $h=1.0$ (maximum hint dependence) and $P(\text{correct}) = 1.0$, `HINT` is strictly dominated in true durable gain by `EXPLAIN` and `EXAMPLE` (expected true gain for `EXPLAIN` on an incorrect attempt exceeds `HINT` on a correct attempt).
+  - Formulated a plain conclusion adhering to Roadmap Sec. 39 terminology standards: RL's advantage in v1 is reward tracking/hacking; under v2/v3, RL's true gain advantage over Rule is **preliminary simulated evidence** on a stylized 5-concept module, while robust superiority across diverse settings remains **future work**.
