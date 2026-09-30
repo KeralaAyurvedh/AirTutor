@@ -267,3 +267,8 @@ def step_simulation(
         prerequisite_id=prerequisite_id,
         prerequisite_gain=prereq_gain,
     )
+
+
+# Alias for backward and benchmark compatibility
+simulate_tutoring_step = step_simulation
+

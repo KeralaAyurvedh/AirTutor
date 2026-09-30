@@ -229,3 +229,36 @@ This log documents AI-assisted development across each stage of the AirTutor res
     - In v2 and v3, `HINT` was never chosen greedily (argmax in 0% of visited states in v3).
     - Mathematical derivation demonstrated that in the simulator dynamics, even with $h=1.0$ (maximum hint dependence) and $P(\text{correct}) = 1.0$, `HINT` is strictly dominated in true durable gain by `EXPLAIN` and `EXAMPLE` (expected true gain for `EXPLAIN` on an incorrect attempt exceeds `HINT` on a correct attempt).
   - Formulated a plain conclusion adhering to Roadmap Sec. 39 terminology standards: RL's advantage in v1 is reward tracking/hacking; under v2/v3, RL's true gain advantage over Rule is **preliminary simulated evidence** on a stylized 5-concept module, while robust superiority across diverse settings remains **future work**.
+
+---
+
+## Upgrade: Deep Q-Network (DQN), BKT Belief Tracking, & Document-Grounded RAG
+- **Date:** 2026-09-30
+- **AI Contributions:**
+  - Preserved baseline interfaces (`RuleTeacher`, `FixedTeacher`, `RandomTeacher`, `BaseTeacher`) and simulator dynamics with 100% backward compatibility.
+  - Implemented population archetypes (`FastLearner`, `SlowLearner`, `InattentiveLearner`) in `src/simulator/population.py`.
+  - Implemented standalone Bayesian Knowledge Tracing engine in `src/learner_model/bkt_tracker.py` updating $b_{t+1} \in [0.0, 1.0]$ based strictly on observable binary outcomes ($P(L_0)=0.10, P(T)=0.15, P(S)=0.10, P(G)=0.20$).
+  - Refactored `src/environment/state_encoder.py` to produce a fixed 14-dimensional continuous cognitive state vector invariant to curriculum length, capturing active concept belief, prerequisite belief, curriculum belief mean/min/variance, mastery ratio, failure streak, fatigue, previous action one-hot, and last response flag.
+  - Implemented lightweight PyTorch Deep Q-Network agent in `src/rl/dqn_agent.py` featuring dual Q-networks (14 -> 64 -> 64 -> 5, parameter footprint < 25 KB), preallocated high-performance circular replay buffer, Smooth L1 Huber loss, Polyak soft updates ($\tau = 0.005$), and $\epsilon$-greedy exploration with decay.
+  - Implemented Document-Grounded RAG Engine in `src/llm/rag_engine.py` with multi-format text extraction (.txt, .md, .pdf via pypdf), sliding-window chunking (400 words, 50 overlap), FAISS `IndexFlatIP` cosine similarity search over `sentence-transformers/all-MiniLM-L6-v2` embeddings, and a similarity threshold guardrail ($0.45$) with ungrounded fallback.
+  - Authored comprehensive test suites:
+    - `tests/test_bkt_tracker.py` (6 tests: prior initialization, correct/incorrect updates, probability bounds, reset, independence).
+    - `tests/test_dqn_dims.py` (3 tests: 14-D curriculum length invariance, action selection, experience replay training, serialization).
+    - `tests/test_pomdp_barrier.py` (Behavioral information leakage test: learners with ground-truth mastery 0.15 vs 0.85 given identical observable histories produce identical 14-D states and identical policy action distributions).
+    - `tests/test_rag_pipeline.py` (4 tests: chunking, grounded retrieval, out-of-domain fallback, file indexing).
+  - Implemented reproducible comparative benchmark and ablation suite in `src/evaluation/run_dqn_benchmark.py`:
+    - Multi-seed training across seeds [42, 123, 456] for 800 episodes over heterogeneous archetypes.
+    - Comparative evaluation against `RuleTeacher`, `FixedTeacher`, and `RandomTeacher` on 100 held-out evaluation episodes per archetype.
+    - Full ablation comparisons across Condition A (Full 14-D), Condition B (No BKT), and Condition C (No Action History).
+    - Saved 1,800 evaluation records to `experiments/dqn_benchmark/metrics.csv` and generated publication-quality figures:
+      * `experiments/dqn_benchmark/learning_gain_comparison.png`
+      * `experiments/dqn_benchmark/training_reward_loss.png`
+      * `experiments/dqn_benchmark/ablation_study_deltas.png`
+- **Verification & Review:**
+  - Ran `pytest tests/`: all **82 unit/integration/UI tests pass cleanly** (100% pass rate, zero regressions).
+  - Empirical verification: DQN achieves highest normalized learning gain across all learner archetypes:
+    - FastLearner: DQN (0.4267) > Fixed (0.3590) > Rule (0.3245) > Random (0.2796).
+    - InattentiveLearner: DQN (0.1842) > Rule (0.1365) > Fixed (0.1333) > Random (0.1106).
+    - SlowLearner: DQN (0.0493) > Rule (0.0310) > Fixed (0.0263) > Random (0.0233).
+  - Ablation discovery: Removing action history causes FastLearner learning gain to plummet from 0.4267 to 0.2830 (-33.7%), proving action history is load-bearing for credit assignment.
+

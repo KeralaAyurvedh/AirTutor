@@ -5,3 +5,7 @@ streamlit==1.52.2
 python-dotenv==1.2.1
 pytest==9.0.2
 google-genai==2.23.0
+torch>=2.2.0
+faiss-cpu>=1.9.0
+sentence-transformers>=3.0.0
+pypdf>=5.0.0

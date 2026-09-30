@@ -183,3 +183,119 @@ def sample_population(
         population.append(learner)
 
     return population
+
+
+class FastLearner(SimulatedLearner):
+    """Simulated learner archetype with high learning rate, low forgetting, and high transfer."""
+
+    def __init__(
+        self,
+        learner_id: str | None = None,
+        concepts: list[str] | None = None,
+        initial_mastery: float = 0.0,
+        seed: int = 42,
+    ):
+        rng = np.random.default_rng(seed)
+        theta = LearnerParameters(
+            alpha=float(rng.uniform(0.28, 0.35)),
+            beta=float(rng.uniform(0.01, 0.04)),
+            gamma=float(rng.uniform(0.5, 1.0)),
+            h=float(rng.uniform(0.1, 0.4)),
+            tau=float(rng.uniform(0.6, 0.95)),
+            sigma=float(rng.uniform(0.02, 0.04)),
+        )
+        lid = learner_id or f"fast_learner_seed_{seed}"
+        super().__init__(
+            learner_id=lid,
+            theta=theta,
+            concepts=concepts,
+            initial_mastery=initial_mastery,
+            seed=seed,
+        )
+
+
+class SlowLearner(SimulatedLearner):
+    """Simulated learner archetype with low learning rate, higher forgetting, and lower transfer."""
+
+    def __init__(
+        self,
+        learner_id: str | None = None,
+        concepts: list[str] | None = None,
+        initial_mastery: float = 0.0,
+        seed: int = 42,
+    ):
+        rng = np.random.default_rng(seed)
+        theta = LearnerParameters(
+            alpha=float(rng.uniform(0.05, 0.12)),
+            beta=float(rng.uniform(0.08, 0.14)),
+            gamma=float(rng.uniform(1.4, 2.0)),
+            h=float(rng.uniform(0.4, 0.8)),
+            tau=float(rng.uniform(0.2, 0.45)),
+            sigma=float(rng.uniform(0.04, 0.08)),
+        )
+        lid = learner_id or f"slow_learner_seed_{seed}"
+        super().__init__(
+            learner_id=lid,
+            theta=theta,
+            concepts=concepts,
+            initial_mastery=initial_mastery,
+            seed=seed,
+        )
+
+
+class InattentiveLearner(SimulatedLearner):
+    """Simulated learner archetype with high response noise and high hint dependence."""
+
+    def __init__(
+        self,
+        learner_id: str | None = None,
+        concepts: list[str] | None = None,
+        initial_mastery: float = 0.0,
+        seed: int = 42,
+    ):
+        rng = np.random.default_rng(seed)
+        theta = LearnerParameters(
+            alpha=float(rng.uniform(0.15, 0.25)),
+            beta=float(rng.uniform(0.08, 0.15)),
+            gamma=float(rng.uniform(1.0, 1.8)),
+            h=float(rng.uniform(0.7, 1.0)),
+            tau=float(rng.uniform(0.3, 0.7)),
+            sigma=float(rng.uniform(0.12, 0.22)),
+        )
+        lid = learner_id or f"inattentive_learner_seed_{seed}"
+        super().__init__(
+            learner_id=lid,
+            theta=theta,
+            concepts=concepts,
+            initial_mastery=initial_mastery,
+            seed=seed,
+        )
+
+
+LEARNER_ARCHETYPES: dict[str, type[SimulatedLearner]] = {
+    "FastLearner": FastLearner,
+    "SlowLearner": SlowLearner,
+    "InattentiveLearner": InattentiveLearner,
+}
+
+
+def sample_archetype_learner(
+    archetype: str,
+    seed: int,
+    learner_id: str | None = None,
+    concepts: list[str] | None = None,
+    initial_mastery: float = 0.0,
+) -> SimulatedLearner:
+    """Instantiate a learner of a designated archetype."""
+    if archetype not in LEARNER_ARCHETYPES:
+        raise ValueError(
+            f"Unknown archetype '{archetype}'. Available: {list(LEARNER_ARCHETYPES.keys())}"
+        )
+    cls = LEARNER_ARCHETYPES[archetype]
+    return cls(
+        learner_id=learner_id,
+        concepts=concepts,
+        initial_mastery=initial_mastery,
+        seed=seed,
+    )
+

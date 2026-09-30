@@ -17,7 +17,8 @@ ablation experiments (Roadmap Sec. 22).
 
 from dataclasses import dataclass, field
 import functools
-from typing import Sequence
+from typing import Any, Sequence
+import numpy as np
 
 
 @dataclass(frozen=True)
@@ -194,3 +195,184 @@ def index_to_state_tuple(
         curr //= dim
 
     return tuple(reversed(tuple_vals))
+
+
+# ============================================================================
+# --- Fixed-Size 14-Dimensional Cognitive State Encoder (DQN Upgrade) ---
+# Strictly invariant to curriculum length (works for 3 or 100 concepts).
+# ============================================================================
+
+COGNITIVE_STATE_DIM: int = 14
+
+PEDAGOGICAL_ACTION_MAP: dict[str, int] = {
+    "EXPLAIN": 0,
+    "EXAMPLE": 1,
+    "HINT": 2,
+    "PRACTICE": 3,
+    "QUIZ": 3,
+    "REVIEW_PREREQUISITE": 4,
+    "ADVANCE": 4,
+}
+
+
+def _resolve_action_index(action: Any) -> int | None:
+    """Resolve an action enum, string, or integer index to an action index in [0, 4]."""
+    if action is None:
+        return None
+    if isinstance(action, int):
+        return action if (0 <= action < 5) else None
+    if hasattr(action, "name"):
+        name = action.name.upper()
+    else:
+        name = str(action).upper()
+    return PEDAGOGICAL_ACTION_MAP.get(name, None)
+
+
+def encode_cognitive_state(
+    bkt_tracker: Any,
+    current_concept_id: str,
+    prerequisite_concept_id: str | None = None,
+    all_concept_ids: Sequence[str] | None = None,
+    consecutive_failures: int = 0,
+    session_steps: int = 0,
+    max_session_steps: int = 30,
+    previous_action: Any = None,
+    last_response_correct: bool | None = None,
+    as_tensor: bool = False,
+) -> np.ndarray:
+    """Construct the fixed 14-dimensional continuous cognitive state vector.
+
+    Feature Layout:
+    [0]:  BKT belief of current active concept b(curr) in [0, 1]
+    [1]:  BKT belief of prerequisite concept b(prereq) in [0, 1] (1.0 if no prereq)
+    [2]:  Mean BKT belief across all concepts in curriculum in [0, 1]
+    [3]:  Minimum BKT belief across all concepts in [0, 1]
+    [4]:  Variance of BKT beliefs across all concepts in [0, 1]
+    [5]:  Curriculum mastery ratio: fraction of concepts with belief >= 0.85
+    [6]:  Normalized failure streak: min(consecutive_failures, 5) / 5.0 in [0, 1]
+    [7]:  Fatigue indicator: min(session_steps / max_session_steps, 1.0) in [0, 1]
+    [8]:  One-hot action: EXPLAIN
+    [9]:  One-hot action: EXAMPLE
+    [10]: One-hot action: HINT
+    [11]: One-hot action: PRACTICE / QUIZ
+    [12]: One-hot action: REVIEW_PREREQUISITE / ADVANCE
+    [13]: Binary indicator of last observed response (1.0 = correct, 0.0 = incorrect/unobserved)
+    """
+    # 1. Extract beliefs dictionary from BKTTracker or dict
+    if hasattr(bkt_tracker, "get_all_beliefs") and hasattr(bkt_tracker, "get_belief"):
+        all_beliefs_dict = bkt_tracker.get_all_beliefs()
+        b_curr = float(bkt_tracker.get_belief(current_concept_id))
+        if prerequisite_concept_id:
+            b_prereq = float(bkt_tracker.get_belief(prerequisite_concept_id))
+        else:
+            b_prereq = 1.0
+    elif isinstance(bkt_tracker, dict):
+        all_beliefs_dict = bkt_tracker
+        b_curr = float(bkt_tracker.get(current_concept_id, 0.10))
+        b_prereq = float(bkt_tracker.get(prerequisite_concept_id, 1.0)) if prerequisite_concept_id else 1.0
+    else:
+        all_beliefs_dict = {current_concept_id: 0.10}
+        b_curr = 0.10
+        b_prereq = 1.0
+
+    # 2. Gather list of concept IDs for curriculum-level statistics
+    if all_concept_ids is not None and len(all_concept_ids) > 0:
+        c_ids = list(all_concept_ids)
+    elif len(all_beliefs_dict) > 0:
+        c_ids = list(all_beliefs_dict.keys())
+    else:
+        c_ids = [current_concept_id]
+
+    # Collect beliefs for all curriculum concepts
+    if hasattr(bkt_tracker, "get_belief"):
+        belief_values = [float(bkt_tracker.get_belief(cid)) for cid in c_ids]
+    else:
+        belief_values = [float(all_beliefs_dict.get(cid, 0.10)) for cid in c_ids]
+
+    # Calculate curriculum aggregate statistics
+    mean_belief = float(np.mean(belief_values)) if belief_values else b_curr
+    min_belief = float(np.min(belief_values)) if belief_values else b_curr
+    var_belief = float(np.var(belief_values)) if belief_values else 0.0
+    mastery_ratio = (
+        float(sum(1 for b in belief_values if b >= 0.85) / len(belief_values))
+        if belief_values
+        else 0.0
+    )
+
+    # 3. Behavioral and temporal indicators
+    norm_failures = float(min(max(0, consecutive_failures), 5) / 5.0)
+    max_steps = max(1, max_session_steps)
+    fatigue = float(min(max(0, session_steps) / max_steps, 1.0))
+
+    # 4. One-hot action encoding (size 5)
+    action_one_hot = [0.0, 0.0, 0.0, 0.0, 0.0]
+    act_idx = _resolve_action_index(previous_action)
+    if act_idx is not None and 0 <= act_idx < 5:
+        action_one_hot[act_idx] = 1.0
+
+    # 5. Last response indicator
+    last_resp = 1.0 if (last_response_correct is True) else 0.0
+
+    # Construct complete 14-D vector
+    state_vector = np.array(
+        [
+            b_curr,
+            b_prereq,
+            mean_belief,
+            min_belief,
+            var_belief,
+            mastery_ratio,
+            norm_failures,
+            fatigue,
+            action_one_hot[0],
+            action_one_hot[1],
+            action_one_hot[2],
+            action_one_hot[3],
+            action_one_hot[4],
+            last_resp,
+        ],
+        dtype=np.float32,
+    )
+
+    if as_tensor:
+        import torch
+        return torch.from_numpy(state_vector)
+
+    return state_vector
+
+
+class CognitiveStateEncoder:
+    """Encoder producing fixed 14-dimensional cognitive state vectors."""
+
+    def __init__(self, max_session_steps: int = 30):
+        self.max_session_steps = max_session_steps
+
+    def encode(
+        self,
+        bkt_tracker: Any,
+        current_concept_id: str,
+        prerequisite_concept_id: str | None = None,
+        all_concept_ids: Sequence[str] | None = None,
+        consecutive_failures: int = 0,
+        session_steps: int = 0,
+        previous_action: Any = None,
+        last_response_correct: bool | None = None,
+        as_tensor: bool = False,
+    ) -> np.ndarray:
+        return encode_cognitive_state(
+            bkt_tracker=bkt_tracker,
+            current_concept_id=current_concept_id,
+            prerequisite_concept_id=prerequisite_concept_id,
+            all_concept_ids=all_concept_ids,
+            consecutive_failures=consecutive_failures,
+            session_steps=session_steps,
+            max_session_steps=self.max_session_steps,
+            previous_action=previous_action,
+            last_response_correct=last_response_correct,
+            as_tensor=as_tensor,
+        )
+
+
+# Module-level convenience function / alias
+encode = encode_cognitive_state
+
