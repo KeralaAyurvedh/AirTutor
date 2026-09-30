@@ -108,3 +108,34 @@ def test_dqn_training_and_serialization(tmp_path):
     act_orig = agent.select_action(s, greedy=True)
     act_loaded = loaded_agent.select_action(s, greedy=True)
     assert act_orig == act_loaded
+
+
+def test_time_to_mastery_calculation():
+    """Regression test: verify steps_to_mastery correctly detects when all concepts reach BKT >= 0.85."""
+    from src.environment.curriculum import load_module_from_file, CurriculumRepository
+    from src.evaluation.run_dqn_benchmark import run_episode
+    from src.simulator.population import FastLearner
+    from src.teachers.rule_teacher import RuleTeacher
+
+    mod = load_module_from_file("data/curriculum/gate_programming_fundamentals.json")
+    curriculum = CurriculumRepository([mod])
+    concept_ids = curriculum.get_all_concept_ids()
+
+    # Fast learner with high mastery capacity
+    steps_list = []
+    for s in range(10):
+        learner = FastLearner(seed=s, concepts=concept_ids)
+        teacher = RuleTeacher()
+        res = run_episode(
+            policy_or_teacher=teacher,
+            learner=learner,
+            curriculum=curriculum,
+            max_steps=30,
+        )
+        assert 1 <= res["steps_to_mastery"] <= 30
+        assert 0.0 <= res["learning_gain"] <= 1.0
+        steps_list.append(res["steps_to_mastery"])
+
+    # Verify that not all episodes collapse to degenerate 30.00
+    assert any(st < 30 for st in steps_list), "At least one FastLearner should achieve mastery before step 30"
+

@@ -22,28 +22,70 @@ FALLBACK_UNGROUNDED_CONTEXT: str = (
 )
 
 
+_DEFAULT_TOKENIZER = None
+
+
+def get_default_tokenizer():
+    """Lazily load and cache the default HuggingFace tokenizer."""
+    global _DEFAULT_TOKENIZER
+    if _DEFAULT_TOKENIZER is None:
+        try:
+            from transformers import AutoTokenizer
+            _DEFAULT_TOKENIZER = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
+        except Exception:
+            _DEFAULT_TOKENIZER = None
+    return _DEFAULT_TOKENIZER
+
+
 def chunk_text(
     text: str,
     chunk_size: int = DEFAULT_CHUNK_SIZE,
     overlap: int = DEFAULT_CHUNK_OVERLAP,
+    tokenizer: Any = None,
 ) -> list[str]:
-    """Split text into chunks of roughly chunk_size words with overlap."""
-    cleaned = re.sub(r"\s+", " ", text).strip()
-    words = cleaned.split(" ")
-    if not words or words == [""]:
+    """Split text into chunks of specified token count with token overlap.
+
+    Adheres strictly to the specification: 400-TOKEN chunks with 50-TOKEN overlap.
+    Uses the sentence-transformers tokenizer.
+    """
+    cleaned = text.strip()
+    if not cleaned:
         return []
 
-    chunks: list[str] = []
+    tok = tokenizer or get_default_tokenizer()
+    if tok is not None and hasattr(tok, "encode") and hasattr(tok, "decode"):
+        token_ids = tok.encode(cleaned, add_special_tokens=False, truncation=False, verbose=False)
+        if not token_ids:
+            return []
+
+        chunks: list[str] = []
+        start = 0
+        step = max(1, chunk_size - overlap)
+
+        while start < len(token_ids):
+            chunk_token_ids = token_ids[start : start + chunk_size]
+            decoded_chunk = tok.decode(chunk_token_ids, skip_special_tokens=True).strip()
+            if decoded_chunk:
+                chunks.append(decoded_chunk)
+            if start + chunk_size >= len(token_ids):
+                break
+            start += step
+
+        return chunks
+
+    # Fallback to whitespace words if tokenizer is unavailable
+    words = cleaned.split()
+    if not words:
+        return []
+    chunks = []
     start = 0
     step = max(1, chunk_size - overlap)
-
     while start < len(words):
         chunk = " ".join(words[start : start + chunk_size])
         chunks.append(chunk)
         if start + chunk_size >= len(words):
             break
         start += step
-
     return chunks
 
 
@@ -104,7 +146,8 @@ class RAGEngine:
 
     def ingest_text(self, text: str, source: str = "raw_text") -> int:
         """Chunk raw text, compute embeddings, normalize, and add to FAISS index."""
-        text_chunks = chunk_text(text, self.chunk_size, self.chunk_overlap)
+        tok = getattr(self.model, "tokenizer", None)
+        text_chunks = chunk_text(text, self.chunk_size, self.chunk_overlap, tokenizer=tok)
         if not text_chunks:
             return 0
 

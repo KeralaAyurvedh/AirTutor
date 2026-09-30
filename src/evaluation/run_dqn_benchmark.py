@@ -27,7 +27,12 @@ import pandas as pd
 import torch
 
 from src.environment.actions import ACTIONS, NUM_ACTIONS, PedagogicalAction
-from src.environment.curriculum import Concept, CurriculumRepository, load_curriculum
+from src.environment.curriculum import (
+    Concept,
+    CurriculumRepository,
+    load_curriculum,
+    load_module_from_file,
+)
 from src.environment.state_encoder import (
     CognitiveStateEncoder,
     encode_cognitive_state,
@@ -51,7 +56,7 @@ EXPERIMENT_DIR = Path("experiments/dqn_benchmark")
 TRAIN_SEEDS = [42, 123, 456]
 NUM_TRAIN_EPISODES = 800
 NUM_EVAL_EPISODES_PER_TYPE = 100
-MAX_SESSION_STEPS = 25
+MAX_SESSION_STEPS = 30
 MASTERY_THRESHOLD = 0.85
 
 
@@ -224,12 +229,11 @@ def run_episode(
         previous_action = action
         steps_on_concept += 1
 
-        # Reward computation: belief gain - step cost - hint penalty + transfer
+        # Reward computation: belief gain - step cost - hint penalty (strictly observable)
         gain = new_belief - prev_belief
         step_cost = 0.015
         hint_penalty = 0.04 if (action == PedagogicalAction.HINT) else 0.0
-        prereq_bonus = 0.10 * sim_res.prerequisite_gain
-        reward = float(gain - step_cost - hint_penalty + prereq_bonus)
+        reward = float(gain - step_cost - hint_penalty)
         cumulative_reward += reward
 
         # Check curriculum mastery across all concepts
@@ -265,11 +269,17 @@ def run_episode(
         if done:
             break
 
-        # Concept progression logic
+        # Concept progression logic: advance when current concept is mastered or after 5 attempts
         concept_mastered = new_belief >= MASTERY_THRESHOLD
-        concept_timeout = steps_on_concept >= 6
-        if (concept_mastered or concept_timeout) and concept_idx < len(concept_ids) - 1:
-            concept_idx += 1
+        concept_timeout = steps_on_concept >= 5
+        if concept_mastered or concept_timeout:
+            unmastered = [
+                i for i, cid in enumerate(concept_ids)
+                if bkt_tracker.get_belief(cid) < MASTERY_THRESHOLD
+            ]
+            if unmastered:
+                subsequent = [i for i in unmastered if i > concept_idx]
+                concept_idx = subsequent[0] if subsequent else unmastered[0]
             steps_on_concept = 0
 
     if is_training and isinstance(policy_or_teacher, DQNAgent):
@@ -339,7 +349,11 @@ def run_benchmark():
     """Main benchmark and ablation orchestrator."""
     start_time = time.time()
     EXPERIMENT_DIR.mkdir(parents=True, exist_ok=True)
-    curriculum = load_curriculum("data/curriculum")
+    primary_module = Path("data/curriculum/gate_programming_fundamentals.json")
+    if primary_module.is_file():
+        curriculum = CurriculumRepository([load_module_from_file(primary_module)])
+    else:
+        curriculum = load_curriculum("data/curriculum")
     concept_ids = curriculum.get_all_concept_ids()
 
     records: list[dict[str, Any]] = []
@@ -409,11 +423,12 @@ def run_benchmark():
         "RandomTeacher": ("Condition_A_Full", RandomTeacher(name="Random")),
     }
 
-    for policy_name, (cond, pol_obj) in policies.items():
+    policies_list = list(policies.items())
+    for policy_idx, (policy_name, (cond, pol_obj)) in enumerate(policies_list):
         print(f"    Evaluating {policy_name} across archetypes...")
-        for arch in archetypes:
+        for arch_idx, arch in enumerate(archetypes):
             for ep_idx in range(NUM_EVAL_EPISODES_PER_TYPE):
-                eval_seed = eval_seed_base + (hash((policy_name, arch)) % 10000) + ep_idx
+                eval_seed = eval_seed_base + (policy_idx * 1000) + (arch_idx * 100) + ep_idx
                 learner = sample_archetype_learner(arch, seed=eval_seed, concepts=concept_ids)
 
                 res = run_episode(
