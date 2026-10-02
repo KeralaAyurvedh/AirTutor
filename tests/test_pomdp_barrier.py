@@ -129,29 +129,77 @@ def test_tabular_q_learning_pomdp_barrier_no_leakage():
     from src.environment.actions import ACTIONS, PedagogicalAction
     from src.environment.state_encoder import ObservableHistory, encode_state
     from src.rl.q_learning import TabularQAgent
+    from src.simulator.population import LearnerParameters, SimulatedLearner
     from src.teachers.base_teacher import TeacherObservation
 
-    # 1. Two learners with drastically different true mastery and latent theta
-    # Learner A (struggling, true mastery 0.12)
-    # Learner B (advanced, true mastery 0.92)
-    # Both have the exact same observable history: estimated mastery = 0.45, last correct = True, streak = 0, hint = False
+    concepts = ["variables", "conditionals", "loops"]
+
+    # 1. Two actual SimulatedLearner instances with drastically different true mastery and latent theta
+    theta_low = LearnerParameters(alpha=0.06, beta=0.14, gamma=1.9, h=0.95, tau=0.25, sigma=0.08)
+    learner_struggling = SimulatedLearner(
+        learner_id="struggling_learner",
+        theta=theta_low,
+        concepts=concepts,
+        initial_mastery=0.10,
+        seed=101,
+    )
+    for c in concepts:
+        learner_struggling.set_true_mastery(c, 0.10)
+
+    theta_high = LearnerParameters(alpha=0.34, beta=0.01, gamma=0.5, h=0.10, tau=0.95, sigma=0.02)
+    learner_advanced = SimulatedLearner(
+        learner_id="advanced_learner",
+        theta=theta_high,
+        concepts=concepts,
+        initial_mastery=0.90,
+        seed=909,
+    )
+    for c in concepts:
+        learner_advanced.set_true_mastery(c, 0.90)
+
+    # Sanity check: true latent masteries and theta are completely different
+    assert learner_struggling.get_true_mastery("loops") == pytest.approx(0.10)
+    assert learner_advanced.get_true_mastery("loops") == pytest.approx(0.90)
+    assert learner_struggling.theta.alpha != learner_advanced.theta.alpha
+
+    # 2. Feed both learners through identical observable interaction event sequences
+    # (action sequence and response correctness)
+    observed_steps = [
+        ("loops", "EXPLAIN", True),
+        ("loops", "PRACTICE", False),
+        ("loops", "HINT", True),
+    ]
+
+    hist_a = ObservableHistory(concept_id="loops", estimated_mastery=0.45)
+    hist_b = ObservableHistory(concept_id="loops", estimated_mastery=0.45)
+
+    for cid, act, outcome in observed_steps:
+        hist_a.record_step(correct=outcome, action_name=act)
+        hist_b.record_step(correct=outcome, action_name=act)
+
+    # Invariant: encode_state outputs identical discrete feature tuples
+    features_a = encode_state(hist_a)
+    features_b = encode_state(hist_b)
+    assert features_a == features_b, f"Discrete state tuples differ: {features_a} != {features_b}"
+
+    # 3. Create TeacherObservation objects strictly from observable data
     obs_a = TeacherObservation(
         current_concept_id="loops",
-        estimated_mastery=0.45,
-        all_estimated_masteries={"loops": 0.45},
-        last_response_correct=True,
-        recent_responses=[True, False, True],
-        wrong_answer_streak=0,
-        hint_used_last_step=False,
+        estimated_mastery=hist_a.estimated_mastery,
+        all_estimated_masteries={"loops": hist_a.estimated_mastery},
+        last_response_correct=hist_a.last_response_correct,
+        recent_responses=list(hist_a.recent_responses),
+        wrong_answer_streak=hist_a.wrong_answer_streak,
+        hint_used_last_step=hist_a.hint_used_last_step,
     )
     obs_b = TeacherObservation(
         current_concept_id="loops",
-        estimated_mastery=0.45,
-        all_estimated_masteries={"loops": 0.45},
-        last_response_correct=True,
-        recent_responses=[True, False, True],
-        wrong_answer_streak=0,
-        hint_used_last_step=False,
+        estimated_mastery=hist_b.estimated_mastery,
+        all_estimated_masteries={"loops": hist_b.estimated_mastery},
+        last_response_correct=hist_b.last_response_correct,
+        recent_responses=list(hist_b.recent_responses),
+        wrong_answer_streak=hist_b.wrong_answer_streak,
+        hint_used_last_step=hist_b.hint_used_last_step,
     )
 
     # Invariant: TeacherObservation strictly has no theta or true_mastery
@@ -177,6 +225,7 @@ def test_tabular_q_learning_pomdp_barrier_no_leakage():
 def test_action_validity_all_teachers():
     """Verify that all teachers (Random, Fixed, Rule, Tabular Q, DQN) select valid PedagogicalActions."""
     from src.environment.actions import ACTIONS, PedagogicalAction
+    from src.rl.dqn_agent import DQNAgent
     from src.rl.q_learning import TabularQAgent
     from src.teachers.base_teacher import TeacherObservation
     from src.teachers.fixed_teacher import FixedTeacher
@@ -206,6 +255,14 @@ def test_action_validity_all_teachers():
             assert isinstance(act, PedagogicalAction), f"{teacher.name} returned non-PedagogicalAction: {act}"
             assert act in ACTIONS, f"{teacher.name} returned invalid action: {act}"
 
+    # Also verify DQN agent action validity
+    dqn = DQNAgent(state_dim=14, num_actions=5, seed=42)
+    dummy_cognitive_state = np.zeros(14, dtype=np.float32)
+    for _ in range(20):
+        ped_act = dqn.select_pedagogical_action(dummy_cognitive_state, greedy=False)
+        assert isinstance(ped_act, PedagogicalAction)
+        assert ped_act in ACTIONS
+
 
 def test_evaluation_train_test_split_disjointness():
     """Verify that training learners [0, 300) and held-out evaluation learners [10000, 10100) are strictly disjoint."""
@@ -219,4 +276,13 @@ def test_evaluation_train_test_split_disjointness():
 
     assert len(overlap) == 0, f"Data contamination detected! Overlapping seeds: {overlap}"
     assert max(train_seeds) < min(eval_seeds), "Training seed range must be strictly below evaluation seed range"
+
+    # Verify that an overlapping range correctly triggers a data leakage assertion
+    bad_eval_seeds = list(range(250, 350))
+    with pytest.raises(AssertionError, match="Data leakage detected"):
+        assert max(train_seeds) < min(bad_eval_seeds), (
+            f"Data leakage detected! Training seed range [{min(train_seeds)}, {max(train_seeds)}] "
+            f"overlaps with evaluation seed range [{min(bad_eval_seeds)}, {max(bad_eval_seeds)}]."
+        )
+
 

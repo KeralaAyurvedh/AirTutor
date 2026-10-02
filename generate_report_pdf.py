@@ -380,35 +380,35 @@ def build_pdf(filename="docs/AirTutor_Comprehensive_Project_Report.pdf"):
         ],
         [
             Paragraph("<b>Random</b> (Uniform exploration)", table_cell),
-            Paragraph("+0.0115 &plusmn; 0.0119", table_cell),
-            Paragraph("+0.1657 &plusmn; 0.0296", table_cell),
-            Paragraph("0.0004", table_cell),
+            Paragraph("+0.0194 &plusmn; 0.0546", table_cell),
+            Paragraph("+0.0842 &plusmn; 0.1103", table_cell),
+            Paragraph("0.0006", table_cell),
             Paragraph("21.8%", table_cell),
             Paragraph("2.23 bits", table_cell)
         ],
         [
             Paragraph("<b>Fixed</b> (Explain &rarr; Practice)", table_cell),
-            Paragraph("+0.0179 &plusmn; 0.0126", table_cell),
-            Paragraph("+0.2152 &plusmn; 0.0411", table_cell),
-            Paragraph("0.0006", table_cell),
+            Paragraph("-0.0566 &plusmn; 0.0345", table_cell),
+            Paragraph("+0.0686 &plusmn; 0.1308", table_cell),
+            Paragraph("-0.0019", table_cell),
             Paragraph("0.0%", table_cell),
             Paragraph("1.00 bits", table_cell)
         ],
         [
             Paragraph("<b>Rule Baseline</b> (Adaptive Scaffolding)", table_cell),
-            Paragraph("+0.0280 &plusmn; 0.0139", table_cell),
-            Paragraph("+0.2339 &plusmn; 0.0308", table_cell),
-            Paragraph("0.0009", table_cell),
-            Paragraph("8.0%", table_cell),
-            Paragraph("1.40 bits", table_cell)
+            Paragraph("+0.0520 &plusmn; 0.1041", table_cell),
+            Paragraph("+0.2632 &plusmn; 0.1823", table_cell),
+            Paragraph("0.0017", table_cell),
+            Paragraph("6.3%", table_cell),
+            Paragraph("1.08 bits", table_cell)
         ],
         [
             Paragraph("<b>RL Agent (Tabular Q)</b>", table_cell_bold),
-            Paragraph("<b>+0.1309 &plusmn; 0.0067</b>", table_cell_bold),
-            Paragraph("<b>+0.2989 &plusmn; 0.0167</b>", table_cell_bold),
-            Paragraph("<b>0.0044</b>", table_cell_bold),
-            Paragraph("<b>0.5%</b>", table_cell_bold),
-            Paragraph("<b>1.37 bits</b>", table_cell_bold)
+            Paragraph("<b>+0.1146 &plusmn; 0.0766</b>", table_cell_bold),
+            Paragraph("<b>+0.2276 &plusmn; 0.1714</b>", table_cell_bold),
+            Paragraph("<b>0.0038</b>", table_cell_bold),
+            Paragraph("<b>13.3%</b>", table_cell_bold),
+            Paragraph("<b>1.51 bits</b>", table_cell_bold)
         ]
     ]
     bm_table = Table(benchmark_data, colWidths=[120, 95, 95, 75, 55, 64])
@@ -424,9 +424,10 @@ def build_pdf(filename="docs/AirTutor_Comprehensive_Project_Report.pdf"):
     story.append(Spacer(1, 6))
 
     story.append(Paragraph(
-        "<b>Statistical Significance:</b> Welch's t-test and Wilcoxon signed-rank test confirm the RL policy outperforms the "
-        "strong Rule baseline with <b>p &lt; 10<sup>-15</sup></b> and an effect size of <b>Cohen's d = 1.396</b> (very large effect). "
-        "Intervention efficiency is <b>4.9&times; higher</b> than the Rule baseline (0.0044 vs 0.0009).",
+        "<b>Statistical Analysis & POMDP Trade-Off:</b> The RL policy achieves more than double the observable learning gain "
+        "of the Rule baseline (<b>+0.1146 vs +0.0520</b>, p &lt; 10<sup>-15</sup>) and <b>2.2&times; higher</b> intervention efficiency "
+        "(0.0038 vs 0.0017). On true latent gain, the Rule teacher achieves +0.2632 vs RL's +0.2276, reflecting the POMDP information "
+        "barrier where the agent optimizes observable progress without access to the student's true latent parameters &theta;.",
         body_style
     ))
     story.append(Spacer(1, 8))
