@@ -48,7 +48,7 @@ class NumberedCanvas(canvas.Canvas):
         self.restoreState()
 
 
-def build_pdf(filename="AirTutor_Comprehensive_Project_Report.pdf"):
+def build_pdf(filename="docs/AirTutor_Comprehensive_Project_Report.pdf"):
     doc = SimpleDocTemplate(
         filename,
         pagesize=letter,
@@ -483,12 +483,14 @@ def build_pdf(filename="AirTutor_Comprehensive_Project_Report.pdf"):
             Spacer(1, 10)
         ]))
 
-    story.append(Paragraph("<b>4.3 12-Axis Sensitivity Sweep: Proven Algorithmic Robustness</b>", h2_style))
+    story.append(Paragraph("<b>4.3 12-Axis Sensitivity Sweep: Empirical Robustness & Boundary Conditions</b>", h2_style))
     story.append(Paragraph(
-        "To test Hypothesis H3 (that the RL advantage is not an artifact of narrow simulator tuning), we conducted a 12-axis "
+        "To test Hypothesis H3 (investigating whether the RL advantage is an artifact of narrow simulator tuning), we conducted a 12-axis "
         "parameter perturbation sweep (&alpha; &plusmn;20%, &beta; &plusmn;20%, noise &sigma; &plusmn;50%, intervention power &plusmn;20%, "
         "high hint dependence skew, curriculum difficulty &plusmn;1.0). "
-        "<b>Result: The RL advantage over the Rule baseline reliably holds across all 12 axes (&Delta; &ge; +0.104)</b>.",
+        "<b>Result: The RL advantage holds across 11 of 12 axes (&Delta; &ge; +0.051). Under the Harder Curriculum condition (+1.0 difficulty offset), "
+        "the advantage vanishes (&Delta; = -0.0075, status: Vanishes)</b>, identifying an important regime where severe student struggle constraints "
+        "give the heuristic rule baseline parity or slight advantage.",
         body_style
     ))
     story.append(Spacer(1, 6))
@@ -716,5 +718,5 @@ def build_pdf(filename="AirTutor_Comprehensive_Project_Report.pdf"):
     print(f"Successfully generated {filename}")
 
 if __name__ == "__main__":
-    out_path = sys.argv[1] if len(sys.argv) > 1 else "AirTutor_Comprehensive_Project_Report.pdf"
+    out_path = sys.argv[1] if len(sys.argv) > 1 else "docs/AirTutor_Comprehensive_Project_Report.pdf"
     build_pdf(out_path)

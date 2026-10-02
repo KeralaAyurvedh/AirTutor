@@ -1,0 +1,29 @@
+{
+  "run_id": "stage3_benchmark_20261002_214652",
+  "timestamp": "20261002_214652",
+  "git_commit": "bddc4a2a55e33775a7450b100447b812d5bb0da6",
+  "n_train_learners": 300,
+  "train_seed_range": [
+    0,
+    300
+  ],
+  "n_eval_learners": 100,
+  "eval_seed_range": [
+    10000,
+    10100
+  ],
+  "rl_seeds": [
+    42,
+    101,
+    2024,
+    777,
+    999
+  ],
+  "reward_version": "v1 (r_t = delta M_hat)",
+  "state_encoder": "default_v1 (320 states, 1600 Q-values)",
+  "max_steps_per_episode": 30,
+  "python_version": "3.13.14",
+  "system": "Windows",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64"
+}

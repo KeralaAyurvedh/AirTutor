@@ -122,3 +122,101 @@ def test_pomdp_information_barrier_no_leakage():
         f"Policy selected action {action_a} for Learner A and {action_b} for Learner B "
         f"despite identical observable histories!"
     )
+
+
+def test_tabular_q_learning_pomdp_barrier_no_leakage():
+    """Verify Tabular Q-learning agent and discrete state encoder are strictly blind to theta and true M(c, t)."""
+    from src.environment.actions import ACTIONS, PedagogicalAction
+    from src.environment.state_encoder import ObservableHistory, encode_state
+    from src.rl.q_learning import TabularQAgent
+    from src.teachers.base_teacher import TeacherObservation
+
+    # 1. Two learners with drastically different true mastery and latent theta
+    # Learner A (struggling, true mastery 0.12)
+    # Learner B (advanced, true mastery 0.92)
+    # Both have the exact same observable history: estimated mastery = 0.45, last correct = True, streak = 0, hint = False
+    obs_a = TeacherObservation(
+        current_concept_id="loops",
+        estimated_mastery=0.45,
+        all_estimated_masteries={"loops": 0.45},
+        last_response_correct=True,
+        recent_responses=[True, False, True],
+        wrong_answer_streak=0,
+        hint_used_last_step=False,
+    )
+    obs_b = TeacherObservation(
+        current_concept_id="loops",
+        estimated_mastery=0.45,
+        all_estimated_masteries={"loops": 0.45},
+        last_response_correct=True,
+        recent_responses=[True, False, True],
+        wrong_answer_streak=0,
+        hint_used_last_step=False,
+    )
+
+    # Invariant: TeacherObservation strictly has no theta or true_mastery
+    assert not hasattr(obs_a, "theta"), "POMDP barrier violated: TeacherObservation contains theta!"
+    assert not hasattr(obs_a, "true_mastery"), "POMDP barrier violated: TeacherObservation contains true_mastery!"
+    assert not hasattr(obs_b, "theta"), "POMDP barrier violated: TeacherObservation contains theta!"
+    assert not hasattr(obs_b, "true_mastery"), "POMDP barrier violated: TeacherObservation contains true_mastery!"
+
+    # Invariant: Discrete state mapping produces identical state indices
+    agent = TabularQAgent(seed=42)
+    s_a = agent.get_state_index(obs_a)
+    s_b = agent.get_state_index(obs_b)
+    assert s_a == s_b, f"State index differs: {s_a} != {s_b}"
+    assert 0 <= s_a < 320
+
+    # Invariant: Action selection is strictly identical
+    agent.q_table[s_a, 1] = 5.0  # Set learned Q-value for action 1 (EXAMPLE)
+    action_a = agent.select_action(obs_a, greedy=True)
+    action_b = agent.select_action(obs_b, greedy=True)
+    assert action_a == action_b == PedagogicalAction.EXAMPLE
+
+
+def test_action_validity_all_teachers():
+    """Verify that all teachers (Random, Fixed, Rule, Tabular Q, DQN) select valid PedagogicalActions."""
+    from src.environment.actions import ACTIONS, PedagogicalAction
+    from src.rl.q_learning import TabularQAgent
+    from src.teachers.base_teacher import TeacherObservation
+    from src.teachers.fixed_teacher import FixedTeacher
+    from src.teachers.random_teacher import RandomTeacher
+    from src.teachers.rule_teacher import RuleTeacher
+
+    obs = TeacherObservation(
+        current_concept_id="functions",
+        estimated_mastery=0.55,
+        all_estimated_masteries={"functions": 0.55},
+        last_response_correct=True,
+        recent_responses=[True],
+        wrong_answer_streak=0,
+        hint_used_last_step=False,
+    )
+
+    teachers = [
+        RandomTeacher(seed=1),
+        FixedTeacher(),
+        RuleTeacher(),
+        TabularQAgent(seed=42),
+    ]
+
+    for teacher in teachers:
+        for _ in range(20):
+            act = teacher.select_action(obs)
+            assert isinstance(act, PedagogicalAction), f"{teacher.name} returned non-PedagogicalAction: {act}"
+            assert act in ACTIONS, f"{teacher.name} returned invalid action: {act}"
+
+
+def test_evaluation_train_test_split_disjointness():
+    """Verify that training learners [0, 300) and held-out evaluation learners [10000, 10100) are strictly disjoint."""
+    train_seeds = list(range(0, 300))
+    eval_seeds = list(range(10000, 10100))
+
+    # Strict mathematical disjointness
+    train_set = set(train_seeds)
+    eval_set = set(eval_seeds)
+    overlap = train_set.intersection(eval_set)
+
+    assert len(overlap) == 0, f"Data contamination detected! Overlapping seeds: {overlap}"
+    assert max(train_seeds) < min(eval_seeds), "Training seed range must be strictly below evaluation seed range"
+

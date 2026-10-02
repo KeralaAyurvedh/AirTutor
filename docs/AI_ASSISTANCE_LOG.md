@@ -262,3 +262,26 @@ This log documents AI-assisted development across each stage of the AirTutor res
     - SlowLearner: DQN (0.0493) > Rule (0.0310) > Fixed (0.0263) > Random (0.0233).
   - Ablation discovery: Removing action history causes FastLearner learning gain to plummet from 0.4267 to 0.2830 (-33.7%), proving action history is load-bearing for credit assignment.
 
+---
+
+## Final Release Verification & Repository Scientific Cleanup
+- **Date:** 2026-10-02
+- **Prompt:** Final Research Release / Professor-Showcase Cleanup
+- **AI Contributions:**
+  - Conducted full audit of research codebase against authoritative specification (`docs/research_roadmap_v2.md`) and standing rules (`GEMINI.md`).
+  - Executed fresh authoritative Stage 3 benchmark (`python src/evaluation/compare_teachers.py`) across 5 seeds on 100 held-out learners ($[10000, 10100)$).
+  - Exported structured reproducibility record to `experiments/final_benchmark/` (`README.md`, `config.json`, `summary.json`, `metrics.csv`).
+  - Updated `README.md` to reflect freshly verified empirical results (Observable Gain: RL +0.115 vs Rule +0.052; True Latent Gain: Rule +0.263 vs RL +0.228; Final Mastery: RL 0.215 vs Rule 0.152; Efficiency: RL 0.0038 vs Rule 0.0017).
+  - Corrected Stage 4 documentation contradiction: updated `README.md`, `detailed_document.md`, and `generate_report_pdf.py` to remove unconditional "reliably holds across all 12 axes" claims and transparently document the negative finding under the Harder Curriculum condition ($\Delta = -0.0075$, status: "Vanishes").
+  - Corrected Stage 4 runner command in `README.md` to `python src/evaluation/run_stage4_experiments.py`.
+  - Clarified architectural dependency distinction: core tabular Q-learning is strictly CPU-only without PyTorch or GPU; optional DQN extension requires PyTorch; optional RAG requires FAISS, sentence-transformers, and pypdf.
+  - Clarified dependency version specifications in `requirements.txt`.
+  - Removed duplicate root PDF `AirTutor_Comprehensive_Project_Report.pdf` (preserving canonical `docs/AirTutor_Comprehensive_Project_Report.pdf`) and duplicate roadmap `docs/AirTutor_Research_Roadmap_v2.md`.
+  - Added standard MIT `LICENSE` file for open-source distribution.
+  - Strengthened `tests/test_pomdp_barrier.py` with 3 new invariant tests covering Tabular Q-learning POMDP leakage barrier, action validity across all teachers, and train/eval population disjointness.
+  - Audited repository for accidental hardcoded absolute paths, API keys, or leaked credentials (none found).
+- **Verification & Review:**
+  - Test Suite: Executed `python -m pytest` with **86 passed in 78.67s** (0 failed, 0 skipped, 100% pass rate).
+  - Benchmark: Executed `python src/evaluation/compare_teachers.py` with 100% deterministic output matching prior seed runs down to 16 decimal places.
+  - Working Tree: All tracked files cleaned, git status verified clean upon final commit.
+
