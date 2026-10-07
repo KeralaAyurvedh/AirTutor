@@ -285,3 +285,22 @@ This log documents AI-assisted development across each stage of the AirTutor res
   - Benchmark: Executed `python src/evaluation/compare_teachers.py` with 100% deterministic output matching prior seed runs down to 16 decimal places.
   - Working Tree: All tracked files cleaned, git status verified clean upon final commit.
 
+---
+
+## Final Documentation & Evidence Correction Pass
+- **Date:** 2026-10-07
+- **Prompt:** Final Documentation/Evidence Correction Pass
+- **AI Contributions:**
+  - Removed unsupported "mathematically verified" / "mathematical proof" claims regarding the POMDP information barrier across `README.md`, `detailed_document.md`, `generate_report_pdf.py`, `gemini.py`, `openai_compatible.py`, and `test_pomdp_barrier.py`. Adopted conservative, evidence-based phrasing: *"The implemented information barrier is behaviorally tested for the verified execution paths, with dedicated tests preventing latent-state leakage into the tabular RL policy"*, noting behavioral coverage of the 14-D state encoder and DQN agent.
+  - Corrected copyright ownership claim: removed claim that Git author metadata establishes legal copyright ownership. Restored project umbrella identity `AirTutor Contributors` in `LICENSE` and documented author metadata ambiguity (`arun01-vem`) without fabricating legal assignment.
+  - Corrected "zero network calls" claim in `README.md` and `generate_report_pdf.py`: clarified that without configured API credentials, the system defaults to `OfflineTemplateAdapter`, and that live external LLM calls were not part of this test suite verification.
+  - Clarified benchmark provenance: explicitly documented distinction between benchmark-generation commit (`bddc4a2a55e33775a7450b100447b812d5bb0da6`) and subsequent release commits (`81de5f8`, `8dc37df`). Verified via `git diff bddc4a2..HEAD -- src/ data/ configs/` that zero research core modifications occurred, ensuring all benchmark numbers remain frozen and valid.
+  - Synchronized 12-axis sensitivity sweep data in `docs/methodology.md` and `generate_report_pdf.py` sign-off box, preserving the empirical boundary condition (holds on 11 of 12 axes, vanishes under Harder Curriculum with $\Delta = -0.0075$).
+  - Updated test counts across documentation and PDF to reflect all 86 automated tests.
+  - Rebuilt `docs/AirTutor_Comprehensive_Project_Report.pdf` and verified all required/forbidden strings via automated `pypdf` extraction.
+- **Verification & Review:**
+  - Executed `python -m pytest -q` confirming 86 passed, 0 failed.
+  - Executed `pypdf` validation script verifying all benchmark numbers, boundary conditions, and conservative phrasing in the generated PDF report.
+  - Confirmed working tree is clean.
+
+

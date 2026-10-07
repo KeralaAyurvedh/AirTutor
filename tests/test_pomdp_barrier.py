@@ -269,7 +269,7 @@ def test_evaluation_train_test_split_disjointness():
     train_seeds = list(range(0, 300))
     eval_seeds = list(range(10000, 10100))
 
-    # Strict mathematical disjointness
+    # Strict seed range disjointness
     train_set = set(train_seeds)
     eval_set = set(eval_seeds)
     overlap = train_set.intersection(eval_set)

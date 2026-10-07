@@ -63,9 +63,9 @@ The codebase enforces strict modular boundaries (`GEMINI.md` & Roadmap Sec. 29):
 ```
 
 ### Strict Research Invariants
-1. **POMDP Information Barrier:** The RL policy's state input **never** contains the latent parameter vector $\theta$ (learning rate $\alpha$, forgetting rate $\beta$, difficulty sensitivity $\gamma$, hint dependence $h$, transfer ability $\tau$, response noise $\sigma$) or true simulator-internal mastery $M(c, t)$. Only the observable feature vector is passed to the agent.
+1. **POMDP Information Barrier:** The implemented information barrier is behaviorally tested for the verified execution paths, with dedicated tests preventing latent-state leakage into the tabular RL policy. The policy's state input **never** contains the latent parameter vector $\theta$ (learning rate $\alpha$, forgetting rate $\beta$, difficulty sensitivity $\gamma$, hint dependence $h$, transfer ability $\tau$, response noise $\sigma$) or true simulator-internal mastery $M(c, t)$. Only the observable feature vector is passed to the agent. Dedicated behavioral tests in `tests/test_pomdp_barrier.py` verify that differing latent states produce strictly identical observable states and policy action selections for both the tabular agent and the optional continuous 14-D DQN agent.
 2. **Core Independence:** The research core (`src/environment`, `src/learner_model`, `src/simulator`, `src/rl`, `src/teachers`, `src/evaluation`) has zero Streamlit and zero LLM imports. It runs completely headlessly.
-3. **Provider-Agnostic LLM Layer:** All LLM selection is config-driven via environment variables (`LLM_PROVIDER`, `LLM_MODEL`, `LLM_API_KEY`, `LLM_BASE_URL`). The system works out-of-the-box with zero API keys using `OfflineTemplateAdapter`.
+3. **Provider-Agnostic LLM Layer:** All LLM selection is config-driven via environment variables (`LLM_PROVIDER`, `LLM_MODEL`, `LLM_API_KEY`, `LLM_BASE_URL`). Without configured API credentials, the application uses the offline template adapter by default; live external LLM calls were not part of this verification.
 
 ---
 
@@ -136,8 +136,8 @@ streamlit run app/main.py
 ```
 
 ### 4.3 Operational Modes
-1. **Offline Mode (Zero API Keys):** If no `.env` exists or no API key is provided, the system defaults to `OfflineTemplateAdapter`. Every tutoring interaction, question, policy rationale, and benchmark visualization functions completely headlessly with zero network calls.
-2. **Online LLM Mode:** To enable dynamic natural-language generation:
+1. **Offline Mode (Default):** Without configured API credentials, the application uses the offline template adapter by default; live external LLM calls were not part of this verification. Every tutoring interaction, question, policy rationale, and benchmark visualization functions headlessly using deterministic curriculum templates.
+2. **Online LLM Mode (Optional):** To configure external LLM providers (live external API calls were not part of this test suite verification):
    - Copy configuration template:
      ```bash
      cp .env.example .env
@@ -164,7 +164,7 @@ Evaluated across $N_{\text{eval}} = 100$ held-out simulated learner configuratio
 | **Rule Baseline** | +0.052 $\pm$ 0.104 [$\pm$0.020] | **+0.263 $\pm$ 0.182 [$\pm$0.036]** | 0.152 $\pm$ 0.104 [$\pm$0.020] | 0.0017 [$\pm$0.0007] | 6.3% | 1.077 bits |
 | **RL (Tabular Q-Agent)** | **+0.115 $\pm$ 0.077 [$\pm$0.007]** | +0.228 $\pm$ 0.171 [$\pm$0.015] | **0.215 $\pm$ 0.077 [$\pm$0.007]** | **0.0038 [$\pm$0.0002]** | 13.3% | 1.512 bits |
 
-*Results represent Mean $\pm$ Standard Deviation [95% Confidence Interval half-width] over 100 held-out evaluation learners across 5 independent RL seeds ($42, 101, 2024, 777, 999$). Artifacts stored at `experiments/final_benchmark/`.*
+*Results represent Mean $\pm$ Standard Deviation [95% Confidence Interval half-width] over 100 held-out evaluation learners across 5 independent RL seeds ($42, 101, 2024, 777, 999$). Artifacts stored at `experiments/final_benchmark/` (generated from benchmark source commit `bddc4a2`, verified valid across release commits `81de5f8` and `8dc37df` via zero diff in `src/`, `data/`, `configs/`).*
 
 #### Key Scientific Insights:
 1. **Observable Gain Superiority:** The learned RL policy achieves more than double the observable gain of the Rule baseline ($+0.115$ vs. $+0.052$, $p < 10^{-15}$ under Welch's $t$-test), and higher intervention efficiency ($0.0038$ vs. $0.0017$), demonstrating effective targeting of pedagogical actions based on observable interaction history.

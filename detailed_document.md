@@ -3,7 +3,7 @@
 > **Authoritative Specification:** `docs/research_roadmap_v2.md`  
 > **Experimental Methodology:** `docs/methodology.md`  
 > **Hardware Profile:** Python 3.11+, CPU-Only Target, 8 GB RAM, Zero PyTorch / GPU Dependencies  
-> **Verification Status:** 68/68 Automated Tests Passing (100% Pytest Coverage)  
+> **Verification Status:** 86/86 Automated Tests Passing (100% Pytest Pass Rate)  
 > **Research Identity:** Reinforcement Learning (RL) Decoupled Pedagogical Decision System + Large Language Model (LLM) Natural Language Delivery Layer  
 
 ---
@@ -132,9 +132,9 @@ To answer this scientifically, AirTutor creates a reproducible testbed where:
 The AirTutor codebase adheres to strict architectural boundaries defined in `GEMINI.md` and Roadmap Section 29:
 
 ### The Five Non-Negotiable Invariants:
-1. **Zero Policy Access to Hidden Latent Traits:** The RL agent conditions exclusively on the 5-feature observable state vector. Neither $\theta = [\alpha, \beta, \gamma, h, \tau, \sigma]$ nor true continuous mastery $M(c, t)$ is ever exposed to the policy or learner model.
+1. **Zero Policy Access to Hidden Latent Traits:** The implemented information barrier is behaviorally tested for the verified execution paths, with dedicated tests preventing latent-state leakage into the tabular RL policy. Neither $\theta = [\alpha, \beta, \gamma, h, \tau, \sigma]$ nor true continuous mastery $M(c, t)$ is ever exposed to the policy or learner model.
 2. **Research Core Zero-LLM Invariant:** The Research Core (`src/environment`, `src/learner_model`, `src/simulator`, `src/rl`, `src/teachers`, `src/evaluation`) contains zero LLM imports, zero provider-specific logic, and zero Streamlit dependencies. It runs completely headlessly.
-3. **Provider-Agnostic Delivery Layer:** All LLM selection is config-driven via environment variables (`LLM_PROVIDER`, `LLM_MODEL`, `LLM_API_KEY`, `LLM_BASE_URL`). The system works out-of-the-box with zero API keys using `OfflineTemplateAdapter`.
+3. **Provider-Agnostic Delivery Layer:** All LLM selection is config-driven via environment variables (`LLM_PROVIDER`, `LLM_MODEL`, `LLM_API_KEY`, `LLM_BASE_URL`). Without configured API credentials, the application uses the offline template adapter by default; live external LLM calls were not part of this verification.
 4. **Honest Scientific Reporting:** If an RL policy fails to beat a baseline, that result is kept and reported. Neither the simulator, reward function, nor baseline heuristic is modified post-hoc to manufacture an artificial win.
 5. **Decoupled Demo Layer:** The Streamlit app (`app/main.py`) contains zero decision logic, zero Bellman updates, zero reward functions, and zero simulator equations. It acts purely as a consumer of `src/`.
 
@@ -145,12 +145,12 @@ The AirTutor codebase adheres to strict architectural boundaries defined in `GEM
 | Component | Technology Selected | Justification & Architectural Constraint |
 |---|---|---|
 | **Programming Language** | Python 3.11+ (Tested on 3.13) | Universal academic and research support. |
-| **RL Formulation** | Tabular Q-Learning (NumPy) | Guaranteed convergence, 100% white-box policy inspection ($Q(s,a)$ table), CPU execution in <1s. No PyTorch / GPU overhead. |
+| **RL Formulation** | Tabular Q-Learning (NumPy) | Standard tabular convergence guarantees under Robbins-Monro conditions, 100% white-box policy inspection ($Q(s,a)$ table), CPU execution in <1s. No PyTorch / GPU overhead. |
 | **Numerical Computation** | NumPy 2.2+, Pandas 2.3+ | Vectorized tabular operations and statistical data aggregation. |
 | **Visualization** | Matplotlib 3.10+ | Publication-grade plots with error bars, confidence bands, and distribution plots. |
 | **User Interface** | Streamlit 1.52+ | Interactive rapid prototyping, transparent Q-table inspection, dynamic what-if parameter exploration. |
 | **LLM Integration** | Official `google-genai` + Standard Library `urllib.request` | Gemini API adapter via official SDK; universal OpenAI-compatible adapter via standard library HTTP (zero third-party API dependencies). |
-| **Testing & Quality** | Pytest 9.0+ | 68 automated unit, integration, simulation sanity, and UI tests. |
+| **Testing & Quality** | Pytest 9.0+ | 86 automated unit, integration, simulation sanity, POMDP barrier, and UI tests. |
 | **Reporting & Docs** | ReportLab 4.4+ | Automated publication-grade PDF report compiler. |
 
 ---
@@ -345,7 +345,7 @@ $$s = b_m \cdot (2 \times 4 \times 4 \times 2) + c_{\text{last}} \cdot (4 \times
   - **Tab 3: Compare Teachers & Research Benchmarks:** Displays the empirical benchmark table with 95% bootstrap CIs alongside all 5 publication-grade figures.
   - **Tab 4: Add Curriculum Material:** Interactive text area allowing educators to paste raw lecture notes and dynamically generate and load new curriculum modules.
 
-### 6.13 `tests/` (Automated Test Suite - 68 Tests)
+### 6.13 `tests/` (Automated Test Suite - 86 Tests)
 - `test_toy_loop.py` (3 tests): Q-learning Bellman updates on toy chain MDP.
 - `test_curriculum.py` (3 tests): Curriculum loading, DAG dependencies, and validation.
 - `test_learner_model.py` (5 tests): Observable mastery updates, decay, and clipping.
@@ -360,6 +360,10 @@ $$s = b_m \cdot (2 \times 4 \times 4 \times 2) + c_{\text{last}} \cdot (4 \times
 - `test_llm_provider.py` (8 tests): Provider abstraction, Gemini/OpenAI mocking, offline fallback.
 - `test_validation.py` (11 tests): JSON schema validation and DAG cycle detection.
 - `test_ui.py` (3 tests): Streamlit module importing, caching, and state transitions.
+- `test_bkt_tracker.py` (6 tests): Bayesian Knowledge Tracing belief updates and bounds.
+- `test_dqn_dims.py` (3 tests): 14-D cognitive state representation and DQN replay mechanics.
+- `test_pomdp_barrier.py` (4 tests): Behavioral POMDP information barrier tests for tabular Q-learning and DQN agents, action validity, and seed disjointness.
+- `test_rag_pipeline.py` (4 tests): RAG chunking, FAISS retrieval, and fallback guardrails.
 
 ### 6.14 `experiments/` (Artifacts & Outputs)
 - `trained_q_agent.npy`: Serialized $320 \times 5$ Q-table weights of the trained RL policy.

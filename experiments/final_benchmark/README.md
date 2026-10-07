@@ -5,6 +5,9 @@ This directory records the reproducible, verified final benchmark execution for 
 ## 1. Provenance & Execution Environment
 
 - **Benchmark Command:** `python src/evaluation/compare_teachers.py`
+- **Benchmark Source Commit:** `bddc4a2a55e33775a7450b100447b812d5bb0da6` (authoritative benchmark generation run)
+- **Release Commits:** `81de5f8`, `8dc37df`
+- **Research Core Invariance Verification:** Verified via `git diff bddc4a2..HEAD -- src/ data/ configs/` that zero lines of code in the research core, curriculum definitions, or experiment configurations were modified across subsequent documentation, license, and test cleanup commits. Therefore, all benchmark values remain 100% valid, authoritative, and reproducible.
 - **Execution Date:** 2026-10-02 21:46:52 UTC+05:30
 - **Python Version:** 3.13.14 (CPython)
 - **Operating System:** Windows 11 (AMD64)

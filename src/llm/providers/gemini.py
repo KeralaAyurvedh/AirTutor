@@ -82,7 +82,7 @@ class GeminiAdapter(LLMProvider):
         """Construct pedagogical system instruction and user prompt."""
         system_instruction = (
             "You are AirTutor, an adaptive educational AI tutor for computer science. "
-            "A tabular reinforcement learning policy has mathematically selected an optimal "
+            "A tabular reinforcement learning policy has selected an optimal "
             "pedagogical intervention for this step based on the student's observable learning state. "
             "Your role is strictly to deliver that intervention in natural language with high educational clarity."
         )

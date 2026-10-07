@@ -134,26 +134,25 @@ We evaluated whether policy generalization breaks when trained on an artificiall
 
 ### 3.4 Robustness & Sensitivity Sweep (Roadmap Sec. 21)
 
-We perturbed 12 distinct simulator parameter axes one at a time and evaluated both RL and the competitive Rule baseline on 100 held-out learners:
+To test Hypothesis H3 (investigating whether the RL advantage is an artifact of narrow simulator tuning), 12 simulator parameter axes were perturbed one at a time on 100 held-out learners:
 
-| Perturbation Axis | Description | RL Gain | Rule Gain | RL Advantage ($\Delta$) | Status |
+| Perturbation Condition | Parameter Shift | RL Gain | Rule Gain | RL Advantage ($\Delta$) | Status |
 |---|---|---|---|---|---|
-| **Baseline** | Default distributions | +0.089 | -0.037 | **+0.126** | **Holds** |
-| **Alpha -20%** | Slower learning rates | +0.079 | -0.043 | **+0.121** | **Holds** |
-| **Alpha +20%** | Faster learning rates | +0.103 | -0.032 | **+0.134** | **Holds** |
-| **Beta -20%** | Slower forgetting | +0.092 | -0.036 | **+0.128** | **Holds** |
-| **Beta +20%** | Faster forgetting | +0.088 | -0.038 | **+0.126** | **Holds** |
-| **Noise Sigma -50%** | Lower response noise | +0.091 | -0.037 | **+0.129** | **Holds** |
-| **Noise Sigma +50%** | Higher response noise | +0.090 | -0.040 | **+0.130** | **Holds** |
-| **A_effect -20%** | Weaker pedagogical effect | +0.076 | -0.043 | **+0.119** | **Holds** |
-| **A_effect +20%** | Stronger pedagogical effect | +0.106 | -0.031 | **+0.137** | **Holds** |
-| **High-h Skew** | Hint dependence in [0.5, 1.0] | +0.089 | -0.032 | **+0.121** | **Holds** |
-| **Curriculum Harder** | Difficulty offset +1.0 | +0.088 | -0.015 | **+0.104** | **Holds** |
-| **Curriculum Easier** | Difficulty offset -1.0 | +0.095 | -0.032 | **+0.127** | **Holds** |
+| **Baseline** | Default distributions | +0.125 | +0.052 | **+0.073** | **Holds** |
+| **Alpha -20%** | Slower learning rates | +0.114 | +0.024 | **+0.091** | **Holds** |
+| **Alpha +20%** | Faster learning rates | +0.135 | +0.083 | **+0.052** | **Holds** |
+| **Beta -20%** | Slower forgetting | +0.126 | +0.057 | **+0.069** | **Holds** |
+| **Beta +20%** | Faster forgetting | +0.124 | +0.051 | **+0.072** | **Holds** |
+| **Noise Sigma -50%** | Lower response noise | +0.125 | +0.054 | **+0.071** | **Holds** |
+| **Noise Sigma +50%** | Higher response noise | +0.123 | +0.053 | **+0.070** | **Holds** |
+| **Action Effect -20%** | Weaker pedagogical effect | +0.113 | +0.024 | **+0.089** | **Holds** |
+| **Action Effect +20%** | Stronger pedagogical effect | +0.136 | +0.083 | **+0.053** | **Holds** |
+| **High-h Skew** | Hint dependence in $[0.5, 1.0]$ | +0.130 | +0.060 | **+0.071** | **Holds** |
+| **Curriculum Harder** | Difficulty offset $+1.0$ | +0.123 | +0.130 | **-0.007** | **Vanishes** |
+| **Curriculum Easier** | Difficulty offset $-1.0$ | +0.126 | +0.019 | **+0.108** | **Holds** |
 
 #### Robustness Finding:
-The RL pedagogical advantage over the Rule baseline **reliably holds across all 12 perturbation axes** ($\Delta \ge +0.104$, substantially above the $+0.020$ threshold).
-The single condition that most tightened the RL advantage was **Curriculum Harder (+1.0 difficulty offset)**, where headroom narrowed to $+0.104$. Under elevated difficulty, all teachers face higher failure rates, constraining the margin for adaptive differentiation.
+The RL pedagogical advantage over the Rule baseline **holds across 11 of 12 axes** ($\Delta \ge +0.052$, well above the $+0.020$ hypothesis threshold). Under the **Harder Curriculum** condition ($+1.0$ difficulty offset), the RL advantage **vanishes** ($\Delta = -0.0075$, status: **Vanishes**). In this regime, elevated student failure rates force the Rule teacher's hand-crafted remedial heuristic (heavy `EXPLAIN` and `HINT` scaffolding) into continuous execution, eliminating the margin for adaptive differentiation. This negative result constitutes a concrete empirical boundary condition.
 
 ---
 

@@ -193,7 +193,7 @@ def build_pdf(filename="docs/AirTutor_Comprehensive_Project_Report.pdf"):
             Paragraph(
                 "<b>Authoritative Spec:</b> docs/research_roadmap_v2.md &nbsp;|&nbsp; "
                 "<b>Runtime:</b> Python 3.11+, CPU-Only (8 GB RAM) &nbsp;|&nbsp; "
-                "<b>Test Suite:</b> 68/68 Passed (100%)<br/>"
+                "<b>Test Suite:</b> 86/86 Passed (100%)<br/>"
                 "<b>Date:</b> September 2026 &nbsp;|&nbsp; "
                 "<b>Architecture:</b> Tabular Q-Learning (Research Core) + Decoupled LLM Delivery Layer",
                 meta_style
@@ -249,7 +249,7 @@ def build_pdf(filename="docs/AirTutor_Comprehensive_Project_Report.pdf"):
         "The project specification is defined in <b>docs/research_roadmap_v2.md</b> (43 sections). It phased the development "
         "into 7 milestone stages (Stage 0 to Stage 6). <b>Are we completely developed?</b> "
         "<b>YES. 100% of Stages 0 through 6 are fully developed, verified, tested, and benchmarked</b>. "
-        "All 68 unit, integration, and UI tests pass cleanly, and all publication-grade experiment outputs have been generated.",
+        "All 86 unit, integration, POMDP barrier, and UI tests pass cleanly, and all publication-grade experiment outputs have been generated.",
         body_style
     ))
 
@@ -353,13 +353,25 @@ def build_pdf(filename="docs/AirTutor_Comprehensive_Project_Report.pdf"):
         "&bull; <b>Reward v3 (Transfer & Balanced Penalties):</b> Incorporates prerequisite transfer credit and explicit penalties for excessive hints and wasted steps.",
         body_style
     ))
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 6))
+
+    story.append(Paragraph("<b>3.4 Behavioral Verification of the POMDP Information Barrier:</b>", h2_style))
+    story.append(Paragraph(
+        "The implemented information barrier is behaviorally tested for the verified execution paths, with dedicated tests "
+        "preventing latent-state leakage into the tabular RL policy. In <code>tests/test_pomdp_barrier.py</code>, simulated learners "
+        "with vastly different true latent mastery and divergent latent parameter vectors &theta; are subjected to identical observable interaction "
+        "sequences. The tests verify that the observable state encoder, teacher observation, discrete state indices, and policy action selections "
+        "remain strictly identical. Dedicated tests likewise verify identical 14-D states and policy selections for the optional continuous DQN agent, "
+        "ensuring that latent learner traits never leak into the decision layer.",
+        body_style
+    ))
+    story.append(Spacer(1, 8))
 
     # Page Break for Results & Findings
     story.append(PageBreak())
 
     # Section 4: What We Have in Our Output & Empirical Results
-    story.append(Paragraph("4. What We Have in Our Output: Benchmark Findings & Empirical Proof", h1_style))
+    story.append(Paragraph("4. What We Have in Our Output: Benchmark Findings & Empirical Results", h1_style))
     story.append(Paragraph(
         "All experimental benchmarks were conducted on <b>N = 100 held-out simulated learners</b> sampled from seed range "
         "<code>[10000, 10100)</code>, which is <b>strictly disjoint</b> from the training cohort (seeds <code>[0, 300)</code>). "
@@ -517,7 +529,7 @@ def build_pdf(filename="docs/AirTutor_Comprehensive_Project_Report.pdf"):
     capabilities_data = [
         [
             Paragraph("Capability Area", table_header),
-            Paragraph("Operational Workflow & Real-World Value", table_header)
+            Paragraph("Operational Workflow & Practical Utility", table_header)
         ],
         [
             Paragraph("<b>1. Interactive AI Tutoring Session</b><br/>(Streamlit Tab 1)", table_cell_bold),
@@ -557,8 +569,9 @@ def build_pdf(filename="docs/AirTutor_Comprehensive_Project_Report.pdf"):
         [
             Paragraph("<b>5. Zero-Cost Offline Deployment</b><br/>(Delivery Layer)", table_cell_bold),
             Paragraph(
-                "The entire system operates headlessly and offline using pre-written pedagogical templates. No internet, API keys, "
-                "or recurring token costs are required for research benchmarking or classroom deployment.",
+                "Without configured API credentials, the application uses the offline template adapter by default; "
+                "live external LLM calls were not part of this verification. Pre-written pedagogical templates ensure "
+                "reproducible, headless benchmarking and demonstration with zero external API dependencies.",
                 table_cell
             )
         ]
@@ -595,7 +608,7 @@ def build_pdf(filename="docs/AirTutor_Comprehensive_Project_Report.pdf"):
     story.append(Paragraph(
         "<b>1. Synthetic Simulator Realism (The Sim-to-Real Gap):</b> "
         "The learner population is generated via a 6-parameter vector (&theta; = [&alpha;, &beta;, &gamma;, h, &tau;, &sigma;]) "
-        "governed by logistic response probability curves. While mathematically sound, continuous, and validated through 5 monotonic "
+        "governed by logistic response probability curves. While continuous, smooth, and validated through 5 monotonic "
         "sanity checks, real human learning entails complex cognitive phenomena (fatigue, frustration, spaced repetition "
         "consolidation, and metacognitive biases) not fully captured by synthetic distributions.",
         crit_bullet
@@ -603,7 +616,7 @@ def build_pdf(filename="docs/AirTutor_Comprehensive_Project_Report.pdf"):
 
     story.append(Paragraph(
         "<b>2. Tabular State-Space Discretization Boundary:</b> "
-        "To guarantee CPU-only execution and absolute interpretability, the state space is discretized into 320 states. "
+        "To ensure CPU-only execution and high interpretability, the state space is discretized into 320 states. "
         "While optimal for single-module mastery, tabular Q-learning cannot generalize across unseen continuous states without "
         "function approximation. Expanding to full degree curricula will require moving to Deep Q-Networks (DQN) or Actor-Critic methods.",
         crit_bullet
@@ -689,7 +702,7 @@ def build_pdf(filename="docs/AirTutor_Comprehensive_Project_Report.pdf"):
     story.append(Paragraph("8. Final Verdict & Academic Checklist", h1_style))
     story.append(Paragraph(
         "AirTutor successfully completes all 16 items of the authoritative Research Checklist (Roadmap Sec. 43). "
-        "The project delivers a fully working, reproducible, lightweight, and scientifically validated adaptive tutoring system. "
+        "The project delivers a fully working, reproducible, lightweight, and empirically evaluated adaptive tutoring prototype. "
         "The codebase is modular, clean, and ready for academic inspection, demonstration, and future extension.",
         body_style
     ))
@@ -701,8 +714,8 @@ def build_pdf(filename="docs/AirTutor_Comprehensive_Project_Report.pdf"):
             "&bull; <b>Implementation Plan Completion:</b> 100% of Stages 0–6 fully delivered.<br/>"
             "&bull; <b>Empirical Hypothesis H1:</b> Supported (RL beats Rule baseline with p &lt; 10<sup>-15</sup>, Cohen's d = 1.396).<br/>"
             "&bull; <b>Empirical Hypothesis H2:</b> Supported (Reward v2/v3 prevents over-explaining and restores formative practice).<br/>"
-            "&bull; <b>Empirical Hypothesis H3:</b> Supported (RL advantage survives all 12 perturbation axes with &Delta; &ge; +0.104).<br/>"
-            "&bull; <b>Software Artifacts:</b> Streamlit GUI, 68 passing pytest tests, 5 publication figures, and decoupled LLM layer.",
+            "&bull; <b>Empirical Hypothesis H3:</b> Supported across 11 of 12 parameter axes with &Delta; &ge; +0.052; under Harder Curriculum, the advantage vanishes (&Delta; = -0.0075, status: Vanishes).<br/>"
+            "&bull; <b>Software Artifacts:</b> Streamlit GUI, 86 passing pytest tests, 5 publication figures, and decoupled LLM layer.",
             callout_style
         )
     ]]
